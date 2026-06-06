@@ -43,6 +43,7 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
         BitsAndBytesConfig,
     )
     from trl import SFTConfig, SFTTrainer
+    from huggingface_hub import login
 
     print(f"Loading tokenizer for {MODEL_ID}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
@@ -179,11 +180,14 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
 
     # Push to Hugging Face Hub if token is available
     if hf_token:
+        token_preview = hf_token[:6] + "..." + hf_token[-4:]
+        print(f"HF_TOKEN loaded (masked): {token_preview}")
+        login(token=hf_token)
         print(
             f"Pushing fine-tuned adapter to Hugging Face Hub repository: {repo_id}..."
         )
-        model.push_to_hub(repo_id, token=hf_token)
-        tokenizer.push_to_hub(repo_id, token=hf_token)
+        model.push_to_hub(repo_id)
+        tokenizer.push_to_hub(repo_id)
         print("Pushed successfully!")
     else:
         print("HF_TOKEN not set or provided. Skipping publishing step.")

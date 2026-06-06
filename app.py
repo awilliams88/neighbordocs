@@ -4,7 +4,11 @@ import os
 
 os.environ.setdefault("GRADIO_SSR_MODE", "false")
 
-from src.neighbordocs.ui import create_app
+from src.neighbordocs.runtime import patch_asyncio_cleanup_warning
+
+patch_asyncio_cleanup_warning()
+
+from src.neighbordocs.ui import create_app  # noqa: E402
 
 demo = create_app()
 

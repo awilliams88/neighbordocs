@@ -9,8 +9,9 @@ from src.neighbordocs.runtime import patch_asyncio_cleanup_warning
 patch_asyncio_cleanup_warning()
 
 from src.neighbordocs.ui import create_app  # noqa: E402
+from src.neighbordocs.styles import CUSTOM_CSS  # noqa: E402
 
 demo = create_app()
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(css=CUSTOM_CSS)

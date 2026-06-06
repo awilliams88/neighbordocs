@@ -27,6 +27,8 @@ GitHub repo: [awilliams88/neighbordocs](https://github.com/awilliams88/neighbord
 - Shows an extracted-text preview.
 - Extracts visible dates, amounts, likely document type, and attention signals.
 - Produces a plain-English summary and next-step checklist.
+- Uses custom Gradio styling so judges see a polished workflow rather than a
+  default scaffold.
 
 ## Hackathon fit
 
@@ -82,6 +84,7 @@ Key files:
 - `src/neighbordocs/config.py` - app constants, URLs, and model plan.
 - `src/neighbordocs/core.py` - document extraction and analysis logic.
 - `src/neighbordocs/ui.py` - Gradio layout and event wiring.
+- `src/neighbordocs/styles.py` - custom CSS for a cleaner judge-facing UI.
 - `examples/` - sample demo documents for judges and screenshots.
 - `requirements.txt` - runtime dependencies.
 - `run.sh` - setup, lint, format, verify, and local app launch.

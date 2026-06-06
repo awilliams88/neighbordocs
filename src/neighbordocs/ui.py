@@ -16,17 +16,22 @@ from .core import analyze_document
 
 def create_app() -> gr.Blocks:
     with gr.Blocks(title=APP_TITLE) as demo:
-        gr.Markdown(f"# {APP_TITLE}\n{APP_DESCRIPTION}")
+        gr.Markdown(
+            f"# {APP_TITLE}\n{APP_DESCRIPTION}",
+            elem_id="nd-header",
+        )
 
         with gr.Row():
             file_input = gr.File(
                 label="Document",
                 file_types=[".pdf", ".txt", ".md"],
+                elem_classes=["nd-panel"],
             )
             notes_input = gr.Textbox(
                 label="Context",
                 lines=7,
                 placeholder="Example: explain this bill and tell me what I need to do next.",
+                elem_classes=["nd-panel"],
             )
 
         model_input = gr.Dropdown(
@@ -34,19 +39,40 @@ def create_app() -> gr.Blocks:
             value=MODEL_CHOICES[DEFAULT_MODEL_KEY]["label"],
             label="Model strategy",
             interactive=True,
+            elem_classes=["nd-panel"],
         )
 
-        run_button = gr.Button("Analyze", variant="primary")
+        run_button = gr.Button("Analyze", variant="primary", elem_classes=["nd-action"])
 
         with gr.Row():
-            extracted_output = gr.Textbox(label="Extracted text", lines=12)
-            model_output = gr.Textbox(label="Selected model path", lines=8)
+            extracted_output = gr.Textbox(
+                label="Extracted text",
+                lines=12,
+                elem_classes=["nd-panel"],
+            )
+            model_output = gr.Textbox(
+                label="Selected model path",
+                lines=8,
+                elem_classes=["nd-panel"],
+            )
 
         with gr.Row():
-            key_details_output = gr.Textbox(label="Key details", lines=10)
-            checklist_output = gr.Textbox(label="Next-action checklist", lines=10)
+            key_details_output = gr.Textbox(
+                label="Key details",
+                lines=10,
+                elem_classes=["nd-panel"],
+            )
+            checklist_output = gr.Textbox(
+                label="Next-action checklist",
+                lines=10,
+                elem_classes=["nd-panel"],
+            )
 
-        summary_output = gr.Textbox(label="Plain-English summary", lines=10)
+        summary_output = gr.Textbox(
+            label="Plain-English summary",
+            lines=10,
+            elem_classes=["nd-panel"],
+        )
 
         gr.Examples(
             examples=[
@@ -62,7 +88,10 @@ def create_app() -> gr.Blocks:
             inputs=[file_input, notes_input],
         )
 
-        gr.Markdown(f"[GitHub repo]({GITHUB_URL}) | [Hugging Face Space]({SPACE_URL})")
+        gr.Markdown(
+            f"[GitHub repo]({GITHUB_URL}) | [Hugging Face Space]({SPACE_URL})",
+            elem_id="nd-links",
+        )
 
         run_button.click(
             fn=_analyze_for_ui,

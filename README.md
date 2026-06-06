@@ -25,8 +25,7 @@ Hugging Face Space: [build-small-hackathon/innerspace](https://huggingface.co/sp
 * **Calming Mindful Interface**: A customized, premium dark-slate/violet visual dashboard optimized for reflection.
 * **CBT Reflector Coach**: Engages the writer with open-ended, therapeutic prompts to explore underlying thoughts.
 * **Cognitive Distortion Scanner**: Highlights thinking patterns like *Catastrophizing*, *All-or-Nothing Thinking*, or *Should Statements* to raise cognitive awareness.
-* **Hybrid Inference**: Run locally on CUDA GPU (ZeroGPU space) with serverless API fallbacks and local rule-based keyword heuristics.
-* **Zero External Dependencies (Offline Heuristics)**: Fully functional without an internet connection or Hugging Face tokens using local keyword parsing.
+* **Hybrid Inference**: Run locally on CUDA GPU (ZeroGPU space) with serverless API fallbacks.
 
 ---
 
@@ -60,19 +59,13 @@ The application is built around single-responsibility layers following SOLID pri
 | - ZeroGPU A10G  |                 | - Section     |
 | - HF API Client |                 |   Splitting   |
 +-----------------+                 +---------------+
-      | (If Inference Fails)
-      v
-+-----+-----+-----+
-| Heuristic Engine|
-| (heuristics.py) | <--- Local offline keyword analyzer for sentiment/CBT fallbacks
-+-----------------+
 ```
 
 1. **User Input**: The user writes a journal entry in the writing block or uploads a `.txt`/`.md` entry.
 2. **Core Routing**: The click event invokes `analyze_journal_ui` through [core.py](core.py).
 3. **Model Generation**: The prompt is processed by the 1.2B parameter OpenBMB model in `inference.py`. It runs on a GPU locally when available.
 4. **API Fallback**: If the local GPU/CPU is busy or unavailable, the system transparently falls back to the Hugging Face Serverless API.
-5. **Heuristic Fallback**: If both inference paths fail (e.g., completely offline with no token), the system falls back to rule-based keyword matchers in `heuristics.py` to extract basic emotions and distortions, ensuring the UI remains active and useful.
+5. **Error Handling**: If both inference paths fail (e.g., completely offline with no token), the system returns structured analysis-unavailable error indicators in the dashboard.
 
 ---
 
@@ -127,7 +120,6 @@ The project directory contains:
 - [analyzer.py](analyzer.py) - Analysis orchestrator and ZeroGPU wrapper.
 - [inference.py](inference.py) - Lazy model loader and local/remote text generators.
 - [parser.py](parser.py) - IO reader and section separator.
-- [heuristics.py](heuristics.py) - Keyword match fallback system.
 - [ui.py](ui.py) - Gradio block layout and interaction hooks.
 - [styles.py](styles.py) - Calming violet custom styling overrides.
 - [tune_journal.py](tune_journal.py) - Modal fine-tuning script.

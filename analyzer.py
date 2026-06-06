@@ -29,12 +29,6 @@ except ImportError:
 from config import ENTRY_LIMIT, MODEL_ID, PARAMETER_COUNT
 from inference import run_model_inference
 from parser import extract_journal_text, parse_sections
-from heuristics import (
-    build_sentiment_fallback,
-    build_areas_fallback,
-    build_distortions_fallback,
-    build_reflection_fallback,
-)
 
 
 @dataclass(frozen=True)
@@ -105,23 +99,14 @@ def analyze_journal(file_path: str | None, raw_text: str) -> JournalReport:
         ]
     )
 
-    # Route output parsing: split sections if model succeeded, otherwise execute heuristics
+    # Route output parsing: split sections if model succeeded, otherwise return error strings
     if response.strip():
         sentiment, areas, distortions, reflection = parse_sections(response)
-        # Apply heuristics fallback if model failed to populate specific sections
-        if "not resolved" in sentiment:
-            sentiment = build_sentiment_fallback(trimmed_entry)
-        if "not resolved" in areas:
-            areas = build_areas_fallback(trimmed_entry)
-        if "not resolved" in distortions:
-            distortions = build_distortions_fallback(trimmed_entry)
-        if reflection.strip() == "How are you feeling about these thoughts today?":
-            reflection = build_reflection_fallback(trimmed_entry)
     else:
-        sentiment = build_sentiment_fallback(trimmed_entry)
-        areas = build_areas_fallback(trimmed_entry)
-        distortions = build_distortions_fallback(trimmed_entry)
-        reflection = build_reflection_fallback(trimmed_entry)
+        sentiment = "- Analysis unavailable"
+        areas = "- Analysis unavailable"
+        distortions = "- Analysis unavailable"
+        reflection = "An error occurred during model analysis. Please check your network connection or Hugging Face access token."
 
     return JournalReport(
         entry_text=trimmed_entry,

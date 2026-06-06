@@ -25,7 +25,7 @@ def get_theme() -> Any:
 
 def create_app() -> gr.Blocks:
     """Creates and lays out the Gradio interface for InnerSpace."""
-    with gr.Blocks(title=APP_TITLE, theme=get_theme()) as demo:
+    with gr.Blocks(title=APP_TITLE) as demo:
         gr.Markdown(
             f"# {APP_TITLE}\n{APP_DESCRIPTION}",
             elem_id="nd-header",

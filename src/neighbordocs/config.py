@@ -30,9 +30,9 @@ MODEL_CHOICES = {
         "status": "candidate path",
     },
     "cohere_multilingual": {
-        "label": "Cohere tiny multilingual explanation",
-        "model": "Cohere tiny multilingual LLM family",
-        "parameters": "3.3B class",
+        "label": "Cohere Tiny Aya multilingual explanation",
+        "model": "Cohere Tiny Aya family (3.35B)",
+        "parameters": "3.35B",
         "sponsor": "Cohere",
         "best_for": "Translation, multilingual summaries, cross-lingual paperwork help.",
         "status": "candidate path",

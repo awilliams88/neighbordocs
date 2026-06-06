@@ -55,7 +55,7 @@ Award surfaces:
 | `nvidia/NVIDIA-Nemotron-Parse-v1.1` | Layout-aware PDF/PPT extraction | Recommended path | <1B |
 | Small text reasoner | Summary, obligations, deadlines, next actions | Planned | <=4B target |
 | `openbmb/MiniCPM-V-4.6` | Scanned-image/document understanding | Candidate | 1B class |
-| Cohere tiny multilingual LLM family | Translation and local-language explanation | Candidate | 3.3B class |
+| Cohere Tiny Aya family | Translation and local-language explanation | Candidate | 3.35B |
 
 The final model list will stay within the hackathon rule that every model must
 be under 32B total parameters. The first planned sponsor path is NVIDIA

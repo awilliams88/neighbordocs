@@ -5,9 +5,10 @@ import os
 # Disable Gradio Server-Side Rendering
 os.environ.setdefault("GRADIO_SSR_MODE", "false")
 
-# Patch asyncio to ignore minor event loop warnings on teardown
-from runtime import patch_asyncio_cleanup_warning  # noqa: E402
+# Patch asyncio to ignore minor event loop warnings on teardown and load .env variables
+from runtime import load_env_file, patch_asyncio_cleanup_warning  # noqa: E402
 
+load_env_file()
 patch_asyncio_cleanup_warning()
 
 # Import UI components and CSS styling

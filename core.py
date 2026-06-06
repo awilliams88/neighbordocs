@@ -10,7 +10,12 @@ from typing import Any
 import torch
 from pypdf import PdfReader
 
-from config import (
+from runtime import load_env_file
+
+# Load environment variables (e.g. HF_TOKEN) from .env at startup
+load_env_file()
+
+from config import (  # noqa: E402
     MODEL_ID,
     PARAMETER_COUNT,
     PDF_PAGE_LIMIT,
@@ -74,7 +79,7 @@ def get_model_and_tokenizer() -> tuple[Any, Any]:
         print(f"Loading model {MODEL_ID}...")
         _model = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
-            torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+            dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
             low_cpu_mem_usage=True,
             trust_remote_code=True,
             token=os.environ.get("HF_TOKEN"),

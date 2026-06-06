@@ -16,71 +16,80 @@ from .core import analyze_document
 
 
 def create_app() -> gr.Blocks:
-    with gr.Blocks(title=APP_TITLE) as demo:
+    # Use Soft theme as base
+    theme = gr.themes.Soft(
+        primary_hue="teal",
+        secondary_hue="slate",
+        neutral_hue="slate",
+    )
+
+    with gr.Blocks(title=APP_TITLE, theme=theme) as demo:
         gr.Markdown(
             f"# {APP_TITLE}\n{APP_DESCRIPTION}",
             elem_id="nd-header",
         )
 
         with gr.Row():
-            file_input = gr.File(
-                label="Document",
-                file_types=[".pdf", ".txt", ".md"],
-                elem_classes=["nd-panel"],
-            )
-            notes_input = gr.Textbox(
-                label="Context",
-                lines=7,
-                placeholder="Example: explain this bill and tell me what I need to do next.",
-                elem_classes=["nd-panel"],
-            )
+            # Left Column: Inputs & Controls
+            with gr.Column(scale=1):
+                file_input = gr.File(
+                    label="Upload Document (.pdf, .txt, .md)",
+                    file_types=[".pdf", ".txt", ".md"],
+                )
+                notes_input = gr.Textbox(
+                    label="User Context / Instructions",
+                    lines=4,
+                    placeholder="Example: summarize this notice and give me a checklist of things to remember.",
+                )
+                with gr.Row():
+                    model_input = gr.Dropdown(
+                        choices=MODEL_LABELS,
+                        value=MODEL_CHOICES[DEFAULT_MODEL_KEY]["label"],
+                        label="Model Strategy",
+                        interactive=True,
+                    )
+                    runtime_input = gr.Dropdown(
+                        choices=RUNTIME_LABELS,
+                        value=RUNTIME_LABELS[0],
+                        label="Runtime Target",
+                        interactive=True,
+                    )
+                run_button = gr.Button(
+                    "Analyze Document", variant="primary", elem_classes=["nd-btn"]
+                )
 
-        model_input = gr.Dropdown(
-            choices=MODEL_LABELS,
-            value=MODEL_CHOICES[DEFAULT_MODEL_KEY]["label"],
-            label="Model strategy",
-            interactive=True,
-            elem_classes=["nd-panel"],
-        )
-        runtime_input = gr.Dropdown(
-            choices=RUNTIME_LABELS,
-            value=RUNTIME_LABELS[0],
-            label="Runtime target",
-            interactive=True,
-            elem_classes=["nd-panel"],
-        )
-
-        run_button = gr.Button("Analyze", variant="primary", elem_classes=["nd-action"])
-
-        with gr.Row():
-            extracted_output = gr.Textbox(
-                label="Extracted text",
-                lines=12,
-                elem_classes=["nd-panel"],
-            )
-            model_output = gr.Textbox(
-                label="Selected model path",
-                lines=8,
-                elem_classes=["nd-panel"],
-            )
-
-        with gr.Row():
-            key_details_output = gr.Textbox(
-                label="Key details",
-                lines=10,
-                elem_classes=["nd-panel"],
-            )
-            checklist_output = gr.Textbox(
-                label="Next-action checklist",
-                lines=10,
-                elem_classes=["nd-panel"],
-            )
-
-        summary_output = gr.Textbox(
-            label="Plain-English summary",
-            lines=10,
-            elem_classes=["nd-panel"],
-        )
+            # Right Column: Clean Tabbed Outputs
+            with gr.Column(scale=1.2):
+                with gr.Tabs():
+                    with gr.TabItem("📄 Summary & Checklist"):
+                        summary_output = gr.Textbox(
+                            label="Plain-English Summary",
+                            lines=8,
+                            elem_classes=["nd-output-box"],
+                        )
+                        checklist_output = gr.Textbox(
+                            label="Next-Action Checklist",
+                            lines=6,
+                            elem_classes=["nd-output-box"],
+                        )
+                    with gr.TabItem("🔍 Key Details"):
+                        key_details_output = gr.Textbox(
+                            label="Extracted Details & Alerts",
+                            lines=14,
+                            elem_classes=["nd-output-box"],
+                        )
+                    with gr.TabItem("📝 Text Preview"):
+                        extracted_output = gr.Textbox(
+                            label="Extracted Text (First 2,000 Chars)",
+                            lines=14,
+                            elem_classes=["nd-output-box"],
+                        )
+                    with gr.TabItem("⚙️ Execution Log"):
+                        model_output = gr.Textbox(
+                            label="Status logs",
+                            lines=14,
+                            elem_classes=["nd-log-box"],
+                        )
 
         gr.Examples(
             examples=[

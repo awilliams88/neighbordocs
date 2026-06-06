@@ -10,12 +10,7 @@ from typing import Any
 import torch
 from pypdf import PdfReader
 
-from runtime import load_env_file
-
-# Load environment variables (e.g. HF_TOKEN) from .env at startup
-load_env_file()
-
-from config import (  # noqa: E402
+from config import (
     MODEL_ID,
     PARAMETER_COUNT,
     PDF_PAGE_LIMIT,

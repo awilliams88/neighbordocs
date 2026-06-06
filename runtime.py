@@ -21,26 +21,4 @@ def patch_asyncio_cleanup_warning() -> None:
     base_events.BaseEventLoop.__del__ = patched_del  # type: ignore[method-assign]
 
 
-def load_env_file() -> None:
-    """Loads environment variables from a .env file if present in the current, parent, or grandparent directory."""
-    import os
-    from pathlib import Path
-
-    # Search for .env in current directory, parent (submodule parent), or grandparent
-    for path in [Path(".env"), Path("../.env"), Path("../../.env")]:
-        if path.is_file():
-            try:
-                for line in path.read_text(encoding="utf-8").splitlines():
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        key, val = line.split("=", 1)
-                        key = key.strip()
-                        val = val.strip().strip("'\"")
-                        if key:
-                            os.environ.setdefault(key, val)
-                break  # Stop searching once we successfully find and load a .env file
-            except Exception:
-                pass
-
-
-__all__: list[str] = ["patch_asyncio_cleanup_warning", "load_env_file"]
+__all__: list[str] = ["patch_asyncio_cleanup_warning"]

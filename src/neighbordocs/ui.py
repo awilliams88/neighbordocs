@@ -9,6 +9,7 @@ from .config import (
     GITHUB_URL,
     MODEL_CHOICES,
     MODEL_LABELS,
+    RUNTIME_LABELS,
     SPACE_URL,
 )
 from .core import analyze_document
@@ -38,6 +39,13 @@ def create_app() -> gr.Blocks:
             choices=MODEL_LABELS,
             value=MODEL_CHOICES[DEFAULT_MODEL_KEY]["label"],
             label="Model strategy",
+            interactive=True,
+            elem_classes=["nd-panel"],
+        )
+        runtime_input = gr.Dropdown(
+            choices=RUNTIME_LABELS,
+            value=RUNTIME_LABELS[0],
+            label="Runtime target",
             interactive=True,
             elem_classes=["nd-panel"],
         )
@@ -95,7 +103,7 @@ def create_app() -> gr.Blocks:
 
         run_button.click(
             fn=_analyze_for_ui,
-            inputs=[file_input, notes_input, model_input],
+            inputs=[file_input, notes_input, model_input, runtime_input],
             outputs=[
                 extracted_output,
                 model_output,
@@ -112,8 +120,9 @@ def _analyze_for_ui(
     file_path: str | None,
     notes: str,
     model_label: str | None,
+    runtime_label: str | None,
 ) -> tuple[str, str, str, str, str]:
-    report = analyze_document(file_path, notes, model_label)
+    report = analyze_document(file_path, notes, model_label, runtime_label)
     return (
         report.preview,
         report.model_path,

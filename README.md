@@ -24,6 +24,7 @@ GitHub repo: [awilliams88/neighbordocs](https://github.com/awilliams88/neighbord
 - Accepts a PDF, TXT, or MD upload plus optional user notes.
 - Extracts readable text from the first pages of a PDF.
 - Lets the user choose a sponsor-aligned model strategy.
+- Lets the user choose a CPU or ZeroGPU runtime target.
 - Shows an extracted-text preview.
 - Extracts visible dates, amounts, likely document type, and attention signals.
 - Produces a plain-English summary and next-step checklist.
@@ -65,12 +66,36 @@ NeighborDocs, that means we can combine a document parser, a tiny text reasoner,
 and an optional vision or multilingual model as long as each model remains under
 32B total parameters.
 
+## Runtime and ZeroGPU plan
+
+The current public Space is kept on `cpu-basic` because the active MVP is a
+rule-based document interpreter. The project now includes a Gradio-callable
+ZeroGPU hook in `src/neighbordocs/gpu.py`, so the app has a clean place to wire
+the final GPU-backed parser or <=4B reasoner.
+
+When the final model call is attached, switch the Space hardware with the HF
+CLI:
+
+```bash
+hf spaces settings build-small-hackathon/neighbordocs --hardware zero-a10g
+```
+
+ZeroGPU requirements for this project:
+
+- The app must stay Gradio-based.
+- The GPU model work must run inside the `@spaces.GPU` function.
+- `spaces` must not be added to `requirements.txt`; the Space runtime manages it.
+- The selected model must remain under the hackathon 32B parameter cap.
+- The Space should be switched back to `cpu-basic` if the GPU model path is not
+  active, otherwise Hugging Face will reject or fail the runtime.
+
 ## Architecture
 
 ```text
 Upload + notes
   -> file type router
   -> sponsor model strategy selector
+  -> CPU or ZeroGPU runtime selector
   -> PDF/text extraction
   -> extracted text preview
   -> dates, amounts, document type, and attention signals
@@ -83,6 +108,7 @@ Key files:
 - `app.py` - thin Gradio launch entry point.
 - `src/neighbordocs/config.py` - app constants, URLs, and model plan.
 - `src/neighbordocs/core.py` - document extraction and analysis logic.
+- `src/neighbordocs/gpu.py` - ZeroGPU-compatible model integration hook.
 - `src/neighbordocs/ui.py` - Gradio layout and event wiring.
 - `src/neighbordocs/styles.py` - custom CSS for a cleaner judge-facing UI.
 - `examples/` - sample demo documents for judges and screenshots.
@@ -116,6 +142,7 @@ The Hugging Face Space is published under the Build Small Hackathon org:
 
 - Hugging Face Space: created.
 - GitHub repo: [awilliams88/neighbordocs](https://github.com/awilliams88/neighbordocs).
+- ZeroGPU hook: wired, pending final model-backed implementation.
 - Demo video: pending.
 - Social post: pending.
 - Final model list and parameter counts: pending once model integrations are
@@ -125,4 +152,6 @@ The Hugging Face Space is published under the Build Small Hackathon org:
 
 - OCR for scanned images is not implemented yet.
 - The summary is currently a rule-based MVP response, not a final model output.
+- ZeroGPU is wired as an integration path, but the public Space should remain on
+  CPU until the final GPU-backed model is connected.
 - Multilingual output is planned but not implemented yet.

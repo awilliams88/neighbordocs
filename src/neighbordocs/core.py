@@ -8,12 +8,16 @@ from pypdf import PdfReader
 
 from .config import (
     DEFAULT_MODEL_KEY,
+    DEFAULT_RUNTIME_KEY,
     MODEL_CHOICES,
     MODEL_KEY_BY_LABEL,
     PDF_PAGE_LIMIT,
     PREVIEW_LIMIT,
+    RUNTIME_CHOICES,
+    RUNTIME_KEY_BY_LABEL,
     SUPPORTED_SUFFIXES,
 )
+from .gpu import run_zero_gpu_document_path
 
 
 @dataclass(frozen=True)
@@ -46,13 +50,15 @@ def analyze_document(
     file_path: str | None,
     notes: str,
     model_label: str | None,
+    runtime_label: str | None,
 ) -> DocumentReport:
     text = extract_text(file_path)
     preview = text[:PREVIEW_LIMIT] if text else "No readable text found."
     user_context = notes.strip()
     model_choice = get_model_choice(model_label)
+    runtime_choice = get_runtime_choice(runtime_label)
 
-    model_path = _build_model_path(model_choice)
+    model_path = _build_model_path(model_choice, runtime_choice, preview)
     key_details = _build_key_details(text)
     summary = _build_summary(text, user_context, model_choice)
     checklist = _build_checklist(text, user_context, model_choice)
@@ -71,6 +77,11 @@ def get_model_choice(model_label: str | None) -> dict[str, str]:
     return MODEL_CHOICES[key]
 
 
+def get_runtime_choice(runtime_label: str | None) -> dict[str, str]:
+    key = RUNTIME_KEY_BY_LABEL.get(runtime_label or "", DEFAULT_RUNTIME_KEY)
+    return RUNTIME_CHOICES[key]
+
+
 def _extract_pdf_text(path: Path) -> str:
     reader = PdfReader(str(path))
     pages = [page.extract_text() or "" for page in reader.pages[:PDF_PAGE_LIMIT]]
@@ -78,16 +89,26 @@ def _extract_pdf_text(path: Path) -> str:
     return text or "No text could be extracted from the PDF."
 
 
-def _build_model_path(model_choice: dict[str, str]) -> str:
-    return "\n".join(
-        [
-            f"Selected path: {model_choice['label']}",
-            f"Primary model: {model_choice['model']}",
-            f"Sponsor surface: {model_choice['sponsor']}",
-            f"Parameter compliance: {model_choice['parameters']}",
-            f"Status: {model_choice['status']}",
-        ]
-    )
+def _build_model_path(
+    model_choice: dict[str, str],
+    runtime_choice: dict[str, str],
+    preview: str,
+) -> str:
+    lines = [
+        f"Selected path: {model_choice['label']}",
+        f"Primary model: {model_choice['model']}",
+        f"Sponsor surface: {model_choice['sponsor']}",
+        f"Parameter compliance: {model_choice['parameters']}",
+        f"Model status: {model_choice['status']}",
+        f"Runtime target: {runtime_choice['label']}",
+        f"Runtime status: {runtime_choice['status']}",
+        f"Runtime fit: {runtime_choice['best_for']}",
+    ]
+
+    if runtime_choice["label"] == RUNTIME_CHOICES["zerogpu"]["label"]:
+        lines.append(run_zero_gpu_document_path(model_choice["label"], preview))
+
+    return "\n".join(lines)
 
 
 def _build_summary(text: str, notes: str, model_choice: dict[str, str]) -> str:

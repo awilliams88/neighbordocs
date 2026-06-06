@@ -8,6 +8,7 @@ from src.neighbordocs.runtime import patch_asyncio_cleanup_warning
 
 patch_asyncio_cleanup_warning()
 
+from src.neighbordocs import gpu as _gpu_runtime  # noqa: E402,F401
 from src.neighbordocs.ui import create_app  # noqa: E402
 from src.neighbordocs.styles import CUSTOM_CSS  # noqa: E402
 

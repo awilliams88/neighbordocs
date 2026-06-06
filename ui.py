@@ -10,7 +10,7 @@ from config import (
     GITHUB_URL,
     SPACE_URL,
 )
-from core import analyze_document
+from core import analyze_document_ui
 
 
 def get_theme() -> Any:
@@ -103,7 +103,7 @@ def create_app() -> gr.Blocks:
 
         # Trigger logic execution on button click
         run_button.click(
-            fn=_analyze_for_ui,
+            fn=analyze_document_ui,
             inputs=[file_input, notes_input],
             outputs=[
                 extracted_output,
@@ -115,18 +115,3 @@ def create_app() -> gr.Blocks:
         )
 
     return demo
-
-
-def _analyze_for_ui(
-    file_path: str | None,
-    notes: str,
-) -> tuple[str, str, str, str, str]:
-    """Wraps core analysis function for Gradio UI mapping."""
-    report = analyze_document(file_path, notes)
-    return (
-        report.preview,
-        report.model_path,
-        report.key_details,
-        report.summary,
-        report.checklist,
-    )

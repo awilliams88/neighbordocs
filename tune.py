@@ -40,9 +40,8 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
         AutoModelForCausalLM,
         AutoTokenizer,
         BitsAndBytesConfig,
-        TrainingArguments,
     )
-    from trl import SFTTrainer
+    from trl import SFTConfig, SFTTrainer
 
     print(f"Loading tokenizer for {MODEL_ID}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
@@ -137,7 +136,8 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     model.print_trainable_parameters()
 
     # Configure Training Arguments
-    training_args = TrainingArguments(
+    # SFTConfig extends TrainingArguments and owns dataset_text_field/max_seq_length
+    training_args = SFTConfig(
         output_dir="/checkpoints/inner-space-lora",
         per_device_train_batch_size=1,
         gradient_accumulation_steps=4,
@@ -151,6 +151,8 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
         save_steps=20,
         save_total_limit=2,
         report_to="none",
+        dataset_text_field="text",
+        max_seq_length=512,
     )
 
     # Start Training
@@ -158,8 +160,6 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     trainer = SFTTrainer(
         model=model,
         train_dataset=dataset,
-        dataset_text_field="text",
-        max_seq_length=512,
         args=training_args,
     )
     trainer.train()

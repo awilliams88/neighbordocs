@@ -27,7 +27,7 @@ except ImportError:
     spaces = _LocalSpacesFallback()
 
 from config import ENTRY_LIMIT, MODEL_ID, PARAMETER_COUNT
-from inference import run_model_inference
+from inference import run_model_inference, run_chat_inference
 from parser import extract_journal_text, parse_sections
 
 
@@ -122,7 +122,7 @@ def analyze_journal(file_path: str | None, raw_text: str) -> JournalReport:
 def analyze_journal_ui(
     file_path: str | None,
     raw_text: str,
-) -> tuple[str, str, str, str, str, str]:
+) -> tuple[str, str, str, str, str, list[dict[str, str]], str]:
     """Gradio-compatible entry point decorated for Hugging Face ZeroGPU compatibility."""
     report = analyze_journal(file_path, raw_text)
     return (
@@ -131,5 +131,61 @@ def analyze_journal_ui(
         report.sentiment,
         report.areas,
         report.distortions,
-        report.reflection,
+        [{"role": "assistant", "content": report.reflection}],
+        report.entry_text,
     )
+
+
+@spaces.GPU(duration=30)
+def chat_respond_ui(
+    history: list[dict[str, str]] | None,
+    user_message: str,
+    journal_context: str,
+) -> tuple[list[dict[str, str]], str, str]:
+    """Gradio-compatible chat handler decorated for Hugging Face ZeroGPU compatibility.
+
+    Returns:
+        tuple containing:
+        - updated history list of dicts
+        - cleared user message textbox string ("")
+        - updated system logs string
+    """
+    updated_history = list(history) if history else []
+    if not user_message.strip():
+        return updated_history, "", "Empty user message. No inference run."
+
+    # Append user message to history
+    updated_history.append({"role": "user", "content": user_message})
+
+    # Build system prompt with context
+    if journal_context.strip():
+        system_prompt = (
+            "You are a gentle and insightful cognitive reflection coach. "
+            "Help the user explore their thoughts using Cognitive Behavioral Therapy (CBT) techniques. "
+            "Keep your replies warm, empathetic, and supportive. Ask gentle, open-ended questions. "
+            "Here is the context of their daily journal entry to help guide the conversation:\n"
+            f'"{journal_context.strip()}"'
+        )
+    else:
+        system_prompt = (
+            "You are a gentle and insightful cognitive reflection coach. "
+            "Help the user explore their thoughts using Cognitive Behavioral Therapy (CBT) techniques. "
+            "Keep your replies warm, empathetic, and supportive. Ask gentle, open-ended questions."
+        )
+
+    response, log_details = run_chat_inference(updated_history, system_prompt)
+
+    # Append coach reply to history
+    updated_history.append({"role": "assistant", "content": response})
+
+    # Prepare logs
+    model_logs = "\n".join(
+        [
+            "Chat Session active.",
+            "Execution flow: local GPU (ZeroGPU Space) with serverless fallback",
+            "---",
+            log_details,
+        ]
+    )
+
+    return updated_history, "", model_logs

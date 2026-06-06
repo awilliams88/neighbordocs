@@ -17,10 +17,12 @@ from analyzer import (
     JournalReport,
     analyze_journal,
     analyze_journal_ui,
+    chat_respond_ui,
 )
 
 __all__ = [
     "JournalReport",
     "analyze_journal",
     "analyze_journal_ui",
+    "chat_respond_ui",
 ]

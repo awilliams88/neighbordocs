@@ -46,19 +46,56 @@ body, .gradio-container {
     padding: 1rem !important;
 }
 
-/* Highlighted Reflective Coach question box */
-.nd-coach-box textarea {
-    background-color: #1d193b !important;
-    color: #e9d5ff !important;
-    border: 1px solid #6b21a8 !important;
-    font-weight: 500 !important;
+/* Chatbot container customization */
+.nd-chatbot {
+    background-color: #110e20 !important;
+    border: 1px solid #3b1b63 !important;
+    border-radius: 12px !important;
 }
 
-/* Red highlighted Cognitive Distortion warning fields */
-.nd-distortions-box textarea {
-    background-color: #24141d !important;
+/* Chat text input and buttons */
+.nd-chat-input textarea {
+    background-color: #0c0e17 !important;
+    color: #f1f5f9 !important;
+    border: 1px solid #2d2e4a !important;
+    border-radius: 8px !important;
+    font-size: 1rem !important;
+}
+.nd-send-btn {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+.nd-send-btn:hover {
+    opacity: 0.9 !important;
+}
+
+/* Glassmorphic dashboard cards styling */
+.nd-output-card textarea {
+    font-family: inherit !important;
+    font-size: 0.95rem !important;
+    line-height: 1.5 !important;
+    padding: 0.75rem !important;
+    border-radius: 8px !important;
+}
+
+/* Specific card styles */
+.nd-emotions-card textarea {
+    border: 1px solid rgba(124, 58, 237, 0.4) !important;
+    background-color: rgba(124, 58, 237, 0.05) !important;
+    color: #c7d2fe !important;
+}
+.nd-areas-card textarea {
+    border: 1px solid rgba(16, 185, 129, 0.4) !important;
+    background-color: rgba(16, 185, 129, 0.05) !important;
+    color: #a7f3d0 !important;
+}
+.nd-distortions-card textarea {
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+    background-color: rgba(239, 68, 68, 0.05) !important;
     color: #fca5a5 !important;
-    border: 1px solid #991b1b !important;
 }
 
 /* System console style output box */

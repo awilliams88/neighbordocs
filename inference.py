@@ -106,5 +106,75 @@ def run_model_inference(prompt: str) -> tuple[str, str]:
 
     except Exception as e:
         log_lines.append(f"Serverless API execution failed: {e}.")
-        log_lines.append("Falling back to local CPU heuristics...")
+        log_lines.append(
+            "Inference failed completely. No heuristics fallback available."
+        )
         return "", "\n".join(log_lines)
+
+
+def run_chat_inference(
+    history: list[dict[str, str]],
+    system_prompt: str,
+) -> tuple[str, str]:
+    """Executes stateful multi-turn chat generation using local hardware or serverless fallback."""
+    log_lines: list[str] = []
+    try:
+        log_lines.append("Initializing local model for chat...")
+        model, tokenizer = get_model_and_tokenizer()
+        device = str(model.device)
+        log_lines.append(f"Running local chat model on device: {device}...")
+
+        # Format chat history according to the model's template
+        messages = [{"role": "system", "content": system_prompt}] + history
+        text = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        model_inputs = tokenizer([text], return_tensors="pt").to(device)
+
+        print("Generating chat response...")
+        generated_ids = model.generate(
+            **model_inputs,
+            max_new_tokens=256,
+            do_sample=True,
+            temperature=0.7,
+            top_p=0.9,
+        )
+
+        generated_ids = [
+            output_ids[len(input_ids) :]
+            for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+        ]
+        response: str = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[
+            0
+        ]
+        log_lines.append("Local chat generation completed successfully.")
+        return response, "\n".join(log_lines)
+
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        log_lines.append(
+            f"Local chat execution failed: {e}. Falling back to serverless API..."
+        )
+
+    log_lines.append(
+        f"Initiating Hugging Face Serverless Inference API for chat ({MODEL_ID})..."
+    )
+    try:
+        from huggingface_hub import InferenceClient
+
+        client = InferenceClient(MODEL_ID, token=os.environ.get("HF_TOKEN"))
+        messages = [{"role": "system", "content": system_prompt}] + history
+        completion = client.chat_completion(messages=messages, max_tokens=256)
+        response = completion.choices[0].message.content or ""
+        log_lines.append("Serverless API chat execution completed successfully.")
+        return response, "\n".join(log_lines)
+
+    except Exception as e:
+        log_lines.append(f"Serverless API execution failed: {e}.")
+        error_msg = (
+            "I'm sorry, I am currently unable to connect to my AI inference engine. "
+            "Please check your Hugging Face API token or network connection."
+        )
+        return error_msg, "\n".join(log_lines)

@@ -85,7 +85,7 @@ We have included a complete training script, [tune_journal.py](tune_journal.py),
    ```
 3. Authenticate your local machine with the Modal environment:
    ```bash
-   modal token set
+   python -m modal setup 
    ```
    This will open a browser window to link your local CLI to your Modal billing and workspace.
 

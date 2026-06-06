@@ -9,7 +9,7 @@ from config import (
     GITHUB_URL,
     SPACE_URL,
 )
-from core import analyze_journal_ui
+from core import analyze_journal_ui, chat_respond_ui
 
 
 def get_theme() -> Any:
@@ -25,13 +25,16 @@ def get_theme() -> Any:
 def create_app() -> gr.Blocks:
     """Creates and lays out the Gradio interface for InnerSpace."""
     with gr.Blocks(title=APP_TITLE) as demo:
+        # Hidden state variable to hold the parsed journal text as context for the chat session
+        journal_context_state = gr.State(value="")
+
         gr.Markdown(
             f"# {APP_TITLE}\n{APP_DESCRIPTION}",
             elem_id="nd-header",
         )
 
         with gr.Row():
-            # Left Column: Journal Entry
+            # Left Column: Journal Entry Inputs
             with gr.Column(scale=1):
                 gr.Markdown("### ✍️ Today's Journal Entry")
                 notes_input = gr.Textbox(
@@ -53,42 +56,63 @@ def create_app() -> gr.Blocks:
                     elem_classes=["nd-btn"],
                 )
 
-            # Right Column: Reflector Coach and Analytical Dashboard
+            # Right Column: Chatbot Coach & Card Dashboard
             with gr.Column(scale=1):
-                with gr.Tabs():
-                    with gr.TabItem("💭 Reflective CBT Coach"):
-                        reflection_output = gr.Textbox(
-                            label="Cognitive Reflector Coach Prompt",
-                            lines=12,
-                            elem_classes=["nd-output-box", "nd-coach-box"],
-                        )
-                    with gr.TabItem("📊 Cognitive Distortion & Mood Dashboard"):
-                        sentiment_output = gr.Textbox(
-                            label="Dominant Emotions & Mood",
-                            lines=4,
-                            elem_classes=["nd-output-box"],
-                        )
-                        areas_output = gr.Textbox(
-                            label="Tagged Life Areas",
-                            lines=3,
-                            elem_classes=["nd-output-box"],
-                        )
-                        distortions_output = gr.Textbox(
-                            label="Cognitive Distortions Detected",
-                            lines=5,
-                            elem_classes=["nd-output-box", "nd-distortions-box"],
-                        )
-                    with gr.TabItem("📝 Entry Logs"):
-                        extracted_output = gr.Textbox(
-                            label="Extracted Journal Text",
-                            lines=7,
-                            elem_classes=["nd-output-box"],
-                        )
-                        model_output = gr.Textbox(
-                            label="System execution logs",
-                            lines=5,
-                            elem_classes=["nd-log-box"],
-                        )
+                # Chatbot Coach section
+                chatbot = gr.Chatbot(
+                    label="💭 Reflective CBT Coach",
+                    height=320,
+                    elem_classes=["nd-chatbot"],
+                )
+                with gr.Row():
+                    chat_input = gr.Textbox(
+                        placeholder="Type your reply here...",
+                        show_label=False,
+                        scale=4,
+                        elem_classes=["nd-chat-input"],
+                    )
+                    send_button = gr.Button(
+                        "Send",
+                        variant="secondary",
+                        scale=1,
+                        elem_classes=["nd-send-btn"],
+                    )
+
+                # Dashboard Row
+                with gr.Row():
+                    sentiment_output = gr.Textbox(
+                        label="📊 Dominant Emotions",
+                        lines=3,
+                        interactive=False,
+                        elem_classes=["nd-output-card", "nd-emotions-card"],
+                    )
+                    areas_output = gr.Textbox(
+                        label="🏷️ Affected Life Areas",
+                        lines=3,
+                        interactive=False,
+                        elem_classes=["nd-output-card", "nd-areas-card"],
+                    )
+                    distortions_output = gr.Textbox(
+                        label="⚠️ Cognitive Distortions",
+                        lines=3,
+                        interactive=False,
+                        elem_classes=["nd-output-card", "nd-distortions-card"],
+                    )
+
+        # Bottom Accordion: Diagnostics and Logs
+        with gr.Accordion("⚙️ Diagnostics & System Execution Logs", open=False):
+            extracted_output = gr.Textbox(
+                label="Extracted Journal Text",
+                lines=3,
+                interactive=False,
+                elem_classes=["nd-log-box"],
+            )
+            model_output = gr.Textbox(
+                label="System execution logs",
+                lines=4,
+                interactive=False,
+                elem_classes=["nd-log-box"],
+            )
 
         # Demo examples for one-click test runs
         gr.Examples(
@@ -110,7 +134,7 @@ def create_app() -> gr.Blocks:
             elem_id="nd-links",
         )
 
-        # Trigger logic execution on button click
+        # Main button triggers analysis, feeds first message into chatbot and sets context
         run_button.click(
             fn=analyze_journal_ui,
             inputs=[file_input, notes_input],
@@ -120,8 +144,21 @@ def create_app() -> gr.Blocks:
                 sentiment_output,
                 areas_output,
                 distortions_output,
-                reflection_output,
+                chatbot,
+                journal_context_state,
             ],
+        )
+
+        # Bind chatbot message submit events
+        chat_input.submit(
+            fn=chat_respond_ui,
+            inputs=[chatbot, chat_input, journal_context_state],
+            outputs=[chatbot, chat_input, model_output],
+        )
+        send_button.click(
+            fn=chat_respond_ui,
+            inputs=[chatbot, chat_input, journal_context_state],
+            outputs=[chatbot, chat_input, model_output],
         )
 
     return demo

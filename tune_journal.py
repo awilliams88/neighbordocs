@@ -67,6 +67,30 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
             "prompt": "My partner didn't reply to my text message for five hours. They must be getting tired of me or planning to break up. I must have said something wrong.",
             "response": "=== EMOTIONS ===\n- Anxiety\n- Insecurity\n- Fear of rejection\n\n=== LIFE AREAS ===\n- Relationships\n\n=== COGNITIVE DISTORTIONS ===\n- Mind Reading (assuming they are tired of you)\n- Personalization ('I must have said something wrong')\n- Catastrophizing (jumping to a breakup)\n\n=== REFLECTION ===\nWhat are some alternative reasons your partner might not have replied, unrelated to your relationship?",
         },
+        {
+            "prompt": "I've been working 12-hour days all week. I feel completely exhausted, but if I take a break, my team will fall behind and it'll be my fault. I just need to push through, but I can barely think straight.",
+            "response": "=== EMOTIONS ===\n- Exhaustion\n- Guilt\n- Anxiety\n\n=== LIFE AREAS ===\n- Career\n- Health & Wellness\n\n=== COGNITIVE DISTORTIONS ===\n- Should Statements ('I just need to push through')\n- Personalization (assuming sole responsibility for the team)\n- All-or-Nothing Thinking\n\n=== REFLECTION ===\nYou've been carrying a massive load. Is it truly your sole responsibility to keep the entire team afloat, or is it okay to express your limits and rest?",
+        },
+        {
+            "prompt": "I got promoted to senior engineer, but I'm terrified. I only got it because they like me, not because I'm actually good at this. Soon they'll assign me a complex task, I'll fail, and everyone will realize I'm a fraud.",
+            "response": "=== EMOTIONS ===\n- Fear\n- Insecurity\n- Imposter Syndrome\n\n=== LIFE AREAS ===\n- Career\n\n=== COGNITIVE DISTORTIONS ===\n- Discounting the Positive (overlooking the achievements that earned the promotion)\n- Mind Reading (assuming others will think you are a fraud)\n- Catastrophizing (jumping to failing and being exposed)\n\n=== REFLECTION ===\nCongratulations on your promotion! When you think they only promoted you because they 'like' you, what hard evidence of your skills and contributions are you overlooking?",
+        },
+        {
+            "prompt": "My best friend forgot my birthday. They didn't even text me. I thought we were close, but clearly they don't value our friendship as much as I do. I should just stop talking to them entirely.",
+            "response": "=== EMOTIONS ===\n- Hurt\n- Disappointment\n- Anger\n\n=== LIFE AREAS ===\n- Relationships\n\n=== COGNITIVE DISTORTIONS ===\n- All-or-Nothing Thinking ('stop talking to them entirely')\n- Mind Reading (assuming they don't value the friendship)\n- Overgeneralization\n\n=== REFLECTION ===\nIt is completely valid to feel hurt when a close friend forgets your birthday. Before deciding to end the friendship, could there be other factors in their life right now that caused them to forget?",
+        },
+        {
+            "prompt": "I've had a headache for two days. I googled it and it says it could be a brain tumor. I'm terrified. I can't focus on anything else and I feel like my life is ending.",
+            "response": "=== EMOTIONS ===\n- Panic\n- Terror\n- Health Anxiety\n\n=== LIFE AREAS ===\n- Health & Wellness\n\n=== COGNITIVE DISTORTIONS ===\n- Catastrophizing (jumping to a brain tumor)\n- Fortune Telling (believing your life is ending)\n\n=== REFLECTION ===\nHaving a persistent headache is uncomfortable and scary, but Google searches often present worst-case scenarios. Have you had similar physical symptoms in the past that turned out to be benign, like stress or dehydration?",
+        },
+        {
+            "prompt": "I got a B on my mid-term exam. This is awful. I wanted to go to a top graduate program. Now my GPA is ruined, and I'll never get in anywhere. I'm a failure.",
+            "response": "=== EMOTIONS ===\n- Despair\n- Self-Doubt\n- Fear of failure\n\n=== LIFE AREAS ===\n- Career\n- Personal Growth\n\n=== COGNITIVE DISTORTIONS ===\n- All-or-Nothing Thinking ('GPAs is ruined, never get in anywhere')\n- Labeling ('I'm a failure')\n- Catastrophizing\n\n=== REFLECTION ===\nGetting a B on a mid-term can feel disappointing when you have high standards, but does this single grade truly close all doors to your future goals?",
+        },
+        {
+            "prompt": "I went to a networking event tonight. I tried to talk to some people, but I stuttered and made an awkward joke. Everyone probably thought I was weird and wanted me to leave. I'm never going to these events again.",
+            "response": "=== EMOTIONS ===\n- Embarrassment\n- Social Anxiety\n- Loneliness\n\n=== LIFE AREAS ===\n- Relationships\n- Personal Growth\n\n=== COGNITIVE DISTORTIONS ===\n- Mind Reading (assuming everyone thought you were weird)\n- Overgeneralization ('never going to these events again')\n- Personalization\n\n=== REFLECTION ===\nSocializing can feel vulnerable. While you felt awkward, did you notice any signs that people were actually judging you, or could they have been focused on their own social anxieties?",
+        },
     ]
 
     # Format entries using the model's chat template

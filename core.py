@@ -137,6 +137,9 @@ def run_model_inference(prompt: str) -> tuple[str, str]:
         log_lines.append("Local model execution completed successfully.")
         return response, "\n".join(log_lines)
     except Exception as e:
+        import traceback
+
+        traceback.print_exc()
         log_lines.append(
             f"Local model execution failed: {e}. Falling back to serverless API..."
         )

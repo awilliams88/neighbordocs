@@ -66,68 +66,73 @@ def get_model_and_tokenizer() -> tuple[Any, Any]:
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         print(f"Loading tokenizer for {MODEL_ID}...")
-        _tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
+        _tokenizer = AutoTokenizer.from_pretrained(
+            MODEL_ID,
+            trust_remote_code=True,
+            token=os.environ.get("HF_TOKEN"),
+        )
         print(f"Loading model {MODEL_ID}...")
         _model = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
-            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+            torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
             low_cpu_mem_usage=True,
             trust_remote_code=True,
+            token=os.environ.get("HF_TOKEN"),
         )
     return _model, _tokenizer
 
 
 @spaces.GPU(duration=30)
-def _generate_on_gpu(prompt: str) -> str:
-    """Runs causal language generation on GPU using transformers."""
+def _generate_locally(prompt: str, device: str) -> str:
+    """Runs causal language generation locally using transformers on the specified device."""
     model, tokenizer = get_model_and_tokenizer()
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Moving model to device: {device}...")
-    model.to(device)
+    try:
+        print(f"Moving model to device: {device}...")
+        model.to(device)
 
-    messages = [{"role": "user", "content": prompt}]
-    text = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-    model_inputs = tokenizer([text], return_tensors="pt").to(device)
+        messages = [{"role": "user", "content": prompt}]
+        text = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        model_inputs = tokenizer([text], return_tensors="pt").to(device)
 
-    print("Generating response...")
-    generated_ids = model.generate(
-        **model_inputs,
-        max_new_tokens=512,
-        do_sample=True,
-        temperature=0.7,
-        top_p=0.9,
-    )
-    generated_ids = [
-        output_ids[len(input_ids) :]
-        for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-    ]
-    response: str = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-    return response
+        print("Generating response...")
+        generated_ids = model.generate(
+            **model_inputs,
+            max_new_tokens=512,
+            do_sample=True,
+            temperature=0.7,
+            top_p=0.9,
+        )
+        generated_ids = [
+            output_ids[len(input_ids) :]
+            for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+        ]
+        response: str = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[
+            0
+        ]
+        return response
+    finally:
+        # Move model back to CPU to release GPU memory (especially critical on ZeroGPU spaces)
+        if device == "cuda":
+            print("Moving model back to CPU...")
+            model.to("cpu")
 
 
-def run_model_inference(prompt: str, use_zerogpu: bool = False) -> tuple[str, str]:
-    """Orchestrates model inference using local ZeroGPU or Serverless Inference API fallback."""
+def run_model_inference(prompt: str) -> tuple[str, str]:
+    """Orchestrates model inference using local CPU/GPU first, and falls back to Serverless API on failure."""
     log_lines: list[str] = []
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    if use_zerogpu:
-        if torch.cuda.is_available():
-            log_lines.append(
-                "ZeroGPU hardware detected. Initiating local GPU execution..."
-            )
-            try:
-                response = _generate_on_gpu(prompt)
-                log_lines.append("Local GPU execution completed successfully.")
-                return response, "\n".join(log_lines)
-            except Exception as e:
-                log_lines.append(
-                    f"Local GPU execution failed: {e}. Falling back to serverless API..."
-                )
-        else:
-            log_lines.append(
-                "ZeroGPU requested, but CUDA is not available. Falling back to serverless API..."
-            )
+    log_lines.append(f"Initiating local model execution on device: {device}...")
+    try:
+        response = _generate_locally(prompt, device)
+        log_lines.append(f"Local model execution on {device} completed successfully.")
+        return response, "\n".join(log_lines)
+    except Exception as e:
+        log_lines.append(
+            f"Local model execution failed: {e}. Falling back to serverless API..."
+        )
 
     # Serverless API Fallback path
     log_lines.append(
@@ -374,3 +379,14 @@ def _guess_document_type(text: str) -> str:
     if any(word in lowered for word in ["signature", "application", "form"]):
         return "form or application"
     return "general document"
+
+
+# Eagerly initialize the model and tokenizer at startup to ensure it works both locally and on Spaces.
+# This prevents cold-start latency when processing the first request and verifies local setup immediately.
+try:
+    get_model_and_tokenizer()
+except Exception as e:
+    print(
+        f"Warning: Eager model initialization failed at startup: {e}.\n"
+        "It will be retried when a document is analyzed."
+    )

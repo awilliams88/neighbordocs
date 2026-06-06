@@ -1,8 +1,8 @@
 ---
 title: InnerSpace
 emoji: 🧠
-colorFrom: violet
-colorTo: slate
+colorFrom: purple
+colorTo: gray
 sdk: gradio
 sdk_version: 6.16.0
 app_file: app.py

@@ -17,7 +17,7 @@ from .config import (
     RUNTIME_KEY_BY_LABEL,
     SUPPORTED_SUFFIXES,
 )
-from .gpu import run_zero_gpu_document_path
+from .gpu import run_model_inference
 
 
 @dataclass(frozen=True)
@@ -58,10 +58,39 @@ def analyze_document(
     model_choice = get_model_choice(model_label)
     runtime_choice = get_runtime_choice(runtime_label)
 
-    model_path = _build_model_path(model_choice, runtime_choice, preview)
-    key_details = _build_key_details(text)
-    summary = _build_summary(text, user_context, model_choice)
-    checklist = _build_checklist(text, user_context, model_choice)
+    # Determine if we should attempt ZeroGPU local run
+    use_zerogpu = runtime_choice["label"] == RUNTIME_CHOICES["zerogpu"]["label"]
+
+    # Generate prompt
+    prompt = _build_model_prompt(preview, user_context)
+
+    # Run inference
+    response, log_details = run_model_inference(prompt, use_zerogpu=use_zerogpu)
+
+    # Combine selection log with execution log
+    model_path = "\n".join(
+        [
+            f"Selected path: {model_choice['label']}",
+            f"Primary model: {model_choice['model']}",
+            f"Sponsor surface: {model_choice['sponsor']}",
+            f"Parameter compliance: {model_choice['parameters']}",
+            f"Model status: {model_choice['status']}",
+            f"Runtime target: {runtime_choice['label']}",
+            f"Runtime status: {runtime_choice['status']}",
+            f"Runtime fit: {runtime_choice['best_for']}",
+            "---",
+            log_details,
+        ]
+    )
+
+    # Parse response
+    if response.strip():
+        key_details, summary, checklist = _parse_sections(response)
+    else:
+        # Fail-safe local rule-based fallback
+        key_details = _build_key_details(text)
+        summary = _build_summary(text, user_context, model_choice)
+        checklist = _build_checklist(text, user_context, model_choice)
 
     return DocumentReport(
         preview=preview,
@@ -89,26 +118,72 @@ def _extract_pdf_text(path: Path) -> str:
     return text or "No text could be extracted from the PDF."
 
 
-def _build_model_path(
-    model_choice: dict[str, str],
-    runtime_choice: dict[str, str],
-    preview: str,
-) -> str:
-    lines = [
-        f"Selected path: {model_choice['label']}",
-        f"Primary model: {model_choice['model']}",
-        f"Sponsor surface: {model_choice['sponsor']}",
-        f"Parameter compliance: {model_choice['parameters']}",
-        f"Model status: {model_choice['status']}",
-        f"Runtime target: {runtime_choice['label']}",
-        f"Runtime status: {runtime_choice['status']}",
-        f"Runtime fit: {runtime_choice['best_for']}",
-    ]
+def _build_model_prompt(text: str, notes: str) -> str:
+    user_context = f"\nUser request/context: {notes}" if notes.strip() else ""
+    return f"""You are a helpful paperwork assistant. Analyze the following document text and notes, then return a response containing three sections separated by '=== SECTION ===' markers:
 
-    if runtime_choice["label"] == RUNTIME_CHOICES["zerogpu"]["label"]:
-        lines.append(run_zero_gpu_document_path(model_choice["label"], preview))
+=== KEY DETAILS ===
+- Likely document type: [E.g., bill, utility invoice, school form, receipt]
+- Dates found: [E.g., June 15, 2026, 2026-06-15]
+- Amounts found: [E.g., $100.00, $25.00]
+- Key Warnings: [List any late fees, signatures required, or attention items]
 
-    return "\n".join(lines)
+=== SUMMARY ===
+A plain-English explanation of what the document is, who it is from, and what it means in simple terms. Keep it to 2-3 bullet points.
+
+=== CHECKLIST ===
+A step-by-step next-action checklist for the user (e.g. - [ ] pay before June 15, - [ ] sign and return to teacher).
+
+{user_context}
+
+Document text:
+{text}"""
+
+
+def _parse_sections(response: str) -> tuple[str, str, str]:
+    key_details = "- No key details extracted by model."
+    summary = "No model summary generated."
+    checklist = "- No actions extracted by model."
+
+    try:
+        if "=== KEY DETAILS ===" in response:
+            parts = response.split("=== KEY DETAILS ===")
+            rest = parts[1]
+            if "=== SUMMARY ===" in rest:
+                subparts = rest.split("=== SUMMARY ===")
+                key_details = subparts[0].strip()
+                rest = subparts[1]
+                if "=== CHECKLIST ===" in rest:
+                    subparts2 = rest.split("=== CHECKLIST ===")
+                    summary = subparts2[0].strip()
+                    checklist = subparts2[1].strip()
+                else:
+                    summary = rest.strip()
+            else:
+                if "=== CHECKLIST ===" in rest:
+                    subparts2 = rest.split("=== CHECKLIST ===")
+                    key_details = subparts2[0].strip()
+                    checklist = subparts2[1].strip()
+                else:
+                    key_details = rest.strip()
+        elif "=== SUMMARY ===" in response:
+            parts = response.split("=== SUMMARY ===")
+            rest = parts[1]
+            if "=== CHECKLIST ===" in rest:
+                subparts2 = rest.split("=== CHECKLIST ===")
+                summary = subparts2[0].strip()
+                checklist = subparts2[1].strip()
+            else:
+                summary = rest.strip()
+        elif "=== CHECKLIST ===" in response:
+            parts = response.split("=== CHECKLIST ===")
+            checklist = parts[1].strip()
+        else:
+            summary = response.strip()
+    except Exception:
+        summary = response.strip()
+
+    return key_details, summary, checklist
 
 
 def _build_summary(text: str, notes: str, model_choice: dict[str, str]) -> str:

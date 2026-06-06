@@ -13,7 +13,6 @@ setup() {
   # shellcheck disable=SC1091
   source .venv/bin/activate
   python -m pip install --disable-pip-version-check -r requirements.txt
-  python -m pip install --disable-pip-version-check gradio==6.16.0 ruff==0.15.16
 }
 
 ensure_venv() {

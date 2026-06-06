@@ -6,27 +6,45 @@ APP_DESCRIPTION = "Plain-English help for everyday paperwork."
 SUPPORTED_SUFFIXES = {".pdf", ".txt", ".md"}
 PDF_PAGE_LIMIT = 3
 PREVIEW_LIMIT = 2000
+DEFAULT_MODEL_KEY = "nvidia_parse"
 
 GITHUB_URL = "https://github.com/awilliams88/neighbordocs"
 SPACE_URL = "https://huggingface.co/spaces/build-small-hackathon/neighbordocs"
 
-MODEL_PLAN = [
-    {
-        "name": "pypdf",
-        "role": "Basic PDF text extraction",
-        "status": "active",
-        "parameters": "not a model",
+MODEL_CHOICES = {
+    "nvidia_parse": {
+        "label": "NVIDIA Nemotron Parse + tiny reasoner",
+        "model": "nvidia/NVIDIA-Nemotron-Parse-v1.1",
+        "parameters": "<1B parser + <=4B reasoner target",
+        "sponsor": "NVIDIA",
+        "best_for": "Forms, bills, reports, tables, structured PDFs, and document intelligence.",
+        "status": "recommended path",
     },
-    {
-        "name": "nvidia/NVIDIA-Nemotron-Parse-v1.1",
-        "role": "Planned layout-aware document parsing",
-        "status": "planned",
-        "parameters": "<1B class",
+    "openbmb_vision": {
+        "label": "OpenBMB MiniCPM-V document vision",
+        "model": "openbmb/MiniCPM-V-4.6",
+        "parameters": "1B class",
+        "sponsor": "OpenBMB",
+        "best_for": "Image uploads, screenshots, scanned paperwork, OCR-heavy documents.",
+        "status": "candidate path",
     },
-    {
-        "name": "Small <=4B text reasoner",
-        "role": "Planned summary, obligations, deadlines, and next actions",
-        "status": "planned",
+    "cohere_multilingual": {
+        "label": "Cohere tiny multilingual explanation",
+        "model": "Cohere tiny multilingual LLM family",
+        "parameters": "3.3B class",
+        "sponsor": "Cohere",
+        "best_for": "Translation, multilingual summaries, cross-lingual paperwork help.",
+        "status": "candidate path",
+    },
+    "tiny_local": {
+        "label": "Tiny local reasoner",
+        "model": "MiniCPM 1B / <=4B local text model",
         "parameters": "<=4B target",
+        "sponsor": "Tiny Titan / Off the Grid",
+        "best_for": "Small CPU/ZeroGPU-friendly summary and checklist generation.",
+        "status": "badge path",
     },
-]
+}
+
+MODEL_LABELS = [choice["label"] for choice in MODEL_CHOICES.values()]
+MODEL_KEY_BY_LABEL = {choice["label"]: key for key, choice in MODEL_CHOICES.items()}

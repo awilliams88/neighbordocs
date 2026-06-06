@@ -5,12 +5,20 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
-from .config import PDF_PAGE_LIMIT, PREVIEW_LIMIT, SUPPORTED_SUFFIXES
+from .config import (
+    DEFAULT_MODEL_KEY,
+    MODEL_CHOICES,
+    MODEL_KEY_BY_LABEL,
+    PDF_PAGE_LIMIT,
+    PREVIEW_LIMIT,
+    SUPPORTED_SUFFIXES,
+)
 
 
 @dataclass(frozen=True)
 class DocumentReport:
     preview: str
+    model_path: str
     summary: str
     checklist: str
 
@@ -32,15 +40,31 @@ def extract_text(file_path: str | None) -> str:
     return f"Unsupported file type: {suffix or 'unknown'}. Try one of: {allowed}."
 
 
-def analyze_document(file_path: str | None, notes: str) -> DocumentReport:
+def analyze_document(
+    file_path: str | None,
+    notes: str,
+    model_label: str | None,
+) -> DocumentReport:
     text = extract_text(file_path)
     preview = text[:PREVIEW_LIMIT] if text else "No readable text found."
     user_context = notes.strip()
+    model_choice = get_model_choice(model_label)
 
-    summary = _build_summary(text, user_context)
-    checklist = _build_checklist(text, user_context)
+    model_path = _build_model_path(model_choice)
+    summary = _build_summary(text, user_context, model_choice)
+    checklist = _build_checklist(text, user_context, model_choice)
 
-    return DocumentReport(preview=preview, summary=summary, checklist=checklist)
+    return DocumentReport(
+        preview=preview,
+        model_path=model_path,
+        summary=summary,
+        checklist=checklist,
+    )
+
+
+def get_model_choice(model_label: str | None) -> dict[str, str]:
+    key = MODEL_KEY_BY_LABEL.get(model_label or "", DEFAULT_MODEL_KEY)
+    return MODEL_CHOICES[key]
 
 
 def _extract_pdf_text(path: Path) -> str:
@@ -50,14 +74,27 @@ def _extract_pdf_text(path: Path) -> str:
     return text or "No text could be extracted from the PDF."
 
 
-def _build_summary(text: str, notes: str) -> str:
+def _build_model_path(model_choice: dict[str, str]) -> str:
+    return "\n".join(
+        [
+            f"Selected path: {model_choice['label']}",
+            f"Primary model: {model_choice['model']}",
+            f"Sponsor surface: {model_choice['sponsor']}",
+            f"Parameter compliance: {model_choice['parameters']}",
+            f"Status: {model_choice['status']}",
+        ]
+    )
+
+
+def _build_summary(text: str, notes: str, model_choice: dict[str, str]) -> str:
     if not text or text == "No file uploaded.":
         return "Upload a document to generate a plain-English explanation."
 
     bullets = [
-        "This first version extracts readable document text and prepares it for small-model reasoning.",
-        "The final app will explain the document, surface obligations, and identify dates or next actions.",
-        "The next implementation step is adding the selected sponsor model path from the README.",
+        "Readable document text was extracted and prepared for small-model reasoning.",
+        f"Recommended sponsor path: {model_choice['label']}.",
+        f"Why this path fits: {model_choice['best_for']}",
+        "The final model-backed version will explain the document, surface obligations, and identify dates or next actions.",
     ]
 
     if notes:
@@ -66,7 +103,7 @@ def _build_summary(text: str, notes: str) -> str:
     return "\n".join(f"- {bullet}" for bullet in bullets)
 
 
-def _build_checklist(text: str, notes: str) -> str:
+def _build_checklist(text: str, notes: str, model_choice: dict[str, str]) -> str:
     if not text or text == "No file uploaded.":
         return "- Upload a PDF, TXT, or MD file."
 
@@ -74,6 +111,7 @@ def _build_checklist(text: str, notes: str) -> str:
         "Confirm the document type and sender.",
         "Look for due dates, payment amounts, signatures, or missing attachments.",
         "Ask a follow-up question if any term or obligation is unclear.",
+        f"Use the selected model path for: {model_choice['best_for']}",
     ]
 
     if notes:

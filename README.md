@@ -23,6 +23,7 @@ GitHub repo: [awilliams88/neighbordocs](https://github.com/awilliams88/neighbord
 
 - Accepts a PDF, TXT, or MD upload plus optional user notes.
 - Extracts readable text from the first pages of a PDF.
+- Lets the user choose a sponsor-aligned model strategy.
 - Shows an extracted-text preview.
 - Produces a plain-English summary and next-step checklist.
 
@@ -47,9 +48,10 @@ Award surfaces:
 | Model or tool | Role | Status | Parameter count |
 | --- | --- | --- | --- |
 | `pypdf` | Basic PDF text extraction | Active | Not a model |
-| `nvidia/NVIDIA-Nemotron-Parse-v1.1` | Layout-aware PDF/PPT extraction | Planned | <1B class |
+| `nvidia/NVIDIA-Nemotron-Parse-v1.1` | Layout-aware PDF/PPT extraction | Recommended path | <1B |
 | Small text reasoner | Summary, obligations, deadlines, next actions | Planned | <=4B target |
-| `openbmb/MiniCPM-V-4.6` | Optional scanned-image/document understanding | Candidate | 1B class |
+| `openbmb/MiniCPM-V-4.6` | Scanned-image/document understanding | Candidate | 1B class |
+| Cohere tiny multilingual LLM family | Translation and local-language explanation | Candidate | 3.3B class |
 
 The final model list will stay within the hackathon rule that every model must
 be under 32B total parameters. The first planned sponsor path is NVIDIA
@@ -60,6 +62,7 @@ Nemotron Parse because document extraction is central to the product.
 ```text
 Upload + notes
   -> file type router
+  -> sponsor model strategy selector
   -> PDF/text extraction
   -> extracted text preview
   -> model or rule-based document interpreter
@@ -72,6 +75,7 @@ Key files:
 - `src/neighbordocs/config.py` - app constants, URLs, and model plan.
 - `src/neighbordocs/core.py` - document extraction and analysis logic.
 - `src/neighbordocs/ui.py` - Gradio layout and event wiring.
+- `examples/` - sample demo documents for judges and screenshots.
 - `requirements.txt` - runtime dependencies.
 - `run.sh` - setup, lint, format, verify, and local app launch.
 

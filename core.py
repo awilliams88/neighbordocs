@@ -10,7 +10,10 @@ from typing import Any
 import torch
 from pypdf import PdfReader
 
-from config import (
+# Load environment variables on import
+import runtime  # noqa: F401
+
+from config import (  # noqa: E402
     MODEL_ID,
     PARAMETER_COUNT,
     PDF_PAGE_LIMIT,
@@ -150,14 +153,17 @@ def extract_text(file_path: str | None) -> str:
     path = Path(file_path)
     suffix = path.suffix.lower()
 
-    if suffix == ".pdf":
-        return _extract_pdf_text(path)
+    try:
+        if suffix == ".pdf":
+            return _extract_pdf_text(path)
 
-    if suffix in {".txt", ".md"}:
-        return path.read_text(encoding="utf-8", errors="ignore").strip()
+        if suffix in {".txt", ".md"}:
+            return path.read_text(encoding="utf-8", errors="ignore").strip()
 
-    allowed = ", ".join(sorted(SUPPORTED_SUFFIXES))
-    return f"Unsupported file type: {suffix or 'unknown'}. Try one of: {allowed}."
+        allowed = ", ".join(sorted(SUPPORTED_SUFFIXES))
+        return f"Unsupported file type: {suffix or 'unknown'}. Try one of: {allowed}."
+    except Exception as e:
+        return f"Error reading file: {e}"
 
 
 def analyze_document(file_path: str | None, notes: str) -> DocumentReport:
@@ -202,10 +208,13 @@ def analyze_document(file_path: str | None, notes: str) -> DocumentReport:
 
 def _extract_pdf_text(path: Path) -> str:
     """Extracts text from the first pages of a PDF file using pypdf."""
-    reader = PdfReader(str(path))
-    pages = [page.extract_text() or "" for page in reader.pages[:PDF_PAGE_LIMIT]]
-    text = "\n".join(part.strip() for part in pages if part.strip())
-    return text or "No text could be extracted from the PDF."
+    try:
+        reader = PdfReader(str(path))
+        pages = [page.extract_text() or "" for page in reader.pages[:PDF_PAGE_LIMIT]]
+        text = "\n".join(part.strip() for part in pages if part.strip())
+        return text or "No text could be extracted from the PDF."
+    except Exception as e:
+        return f"Error reading PDF file: {e}"
 
 
 def _build_model_prompt(text: str, notes: str) -> str:

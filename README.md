@@ -29,6 +29,26 @@ Hugging Face Space: [build-small-hackathon/innerspace](https://huggingface.co/sp
 
 ---
 
+## 🖥️ Local Run & Quality Verification
+
+To set up environment dependencies locally:
+```bash
+./run.sh setup
+```
+
+To launch the Gradio development server:
+```bash
+./run.sh app
+```
+
+To run quality checks (Ruff formatting, Ruff linting, Pyright type check, and python compilation):
+```bash
+./run.sh verify
+```
+All python files are checked against Pyright and Ruff to ensure high code quality.
+
+---
+
 ## ⚙️ Application Workflow Guidelines
 
 The application is built around single-responsibility layers following SOLID principles:
@@ -99,7 +119,7 @@ To push the fine-tuned model back to your Hugging Face account, you need to stor
 #### 3. Run the Fine-Tuning Script
 Run the script using the Modal runner. The command below tells Modal to upload the script, build the remote container, allocate an NVIDIA A10G GPU, mount a persistent volume, and begin training:
 ```bash
-modal run tune_journal.py
+modal run tune.py
 ```
 
 #### 4. What the Script Does under the Hood
@@ -127,21 +147,3 @@ The project directory contains:
 - [run.sh](run.sh) - Local utility script for setup, formatting, linting, and verifying.
 
 ---
-
-## 🖥️ Local Run & Quality Verification
-
-To set up environment dependencies locally:
-```bash
-./run.sh setup
-```
-
-To launch the Gradio development server:
-```bash
-./run.sh app
-```
-
-To run quality checks (Ruff formatting, Ruff linting, Pyright type check, and python compilation):
-```bash
-./run.sh verify
-```
-All python files are checked against Pyright and Ruff to ensure high code quality.

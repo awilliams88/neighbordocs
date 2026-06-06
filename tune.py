@@ -1,21 +1,7 @@
 from __future__ import annotations
 
 import os
-import torch
 import modal
-from datasets import Dataset
-from peft import (
-    LoraConfig,
-    get_peft_model,
-    prepare_model_for_kbit_training,
-)
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    TrainingArguments,
-)
-from trl import SFTTrainer
 
 # Define the Modal App
 app = modal.App("inner-space-tuner")
@@ -38,8 +24,7 @@ volume = modal.Volume.from_name("inner-space-checkpoints", create_if_missing=Tru
 MODEL_ID = "openbmb/MiniCPM5-1B-SFT"
 
 
-# Targets single A10G GPU for cost-effective execution
-# Two hours timeout
+# Targets single A10G GPU; two-hour timeout
 @app.function(
     image=image,
     gpu="A10G",
@@ -48,6 +33,17 @@ MODEL_ID = "openbmb/MiniCPM5-1B-SFT"
 )
 def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     """Fine-tunes openbmb/MiniCPM5-1B-SFT on cognitive behavioral reflections using QLoRA."""
+    import torch
+    from datasets import Dataset
+    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+    from transformers import (
+        AutoModelForCausalLM,
+        AutoTokenizer,
+        BitsAndBytesConfig,
+        TrainingArguments,
+    )
+    from trl import SFTTrainer
+
     print(f"Loading tokenizer for {MODEL_ID}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     tokenizer.pad_token = tokenizer.eos_token
@@ -169,7 +165,7 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     trainer.train()
     print("Fine-tuning completed successfully!")
 
-    # Save and push adapter to Hugging Face Hub
+    # Save adapter to the Modal Volume
     print("Saving fine-tuned adapter...")
     model.save_pretrained("/checkpoints/inner-space-final")
     tokenizer.save_pretrained("/checkpoints/inner-space-final")
@@ -180,7 +176,7 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     if not repo_id:
         repo_id = "build-small-hackathon/inner-space-1b-sft-cbt"
 
-    # If HF token is available, push to hub
+    # Push to Hugging Face Hub if token is available
     if hf_token:
         print(
             f"Pushing fine-tuned adapter to Hugging Face Hub repository: {repo_id}..."

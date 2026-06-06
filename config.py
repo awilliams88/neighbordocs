@@ -14,5 +14,6 @@ SPACE_URL = "https://huggingface.co/spaces/build-small-hackathon/innerspace"
 
 # Targeted OpenBMB model configuration
 MODEL_ID = "openbmb/MiniCPM5-1B-SFT"
+ADAPTER_REPO_ID = "build-small-hackathon/inner-space-1b-sft-cbt"
 SPONSOR_NAME = "OpenBMB"
 PARAMETER_COUNT = "1.2B"

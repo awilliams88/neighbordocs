@@ -7,10 +7,11 @@ import os
 import traceback
 from typing import Any
 import torch
+from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from huggingface_hub import InferenceClient
 
-from config import MODEL_ID
+from config import ADAPTER_REPO_ID, MODEL_ID
 
 # Cache model and tokenizer to prevent reloading on subsequent runs
 _model: Any = None
@@ -36,6 +37,20 @@ def get_model_and_tokenizer() -> tuple[Any, Any]:
             low_cpu_mem_usage=True,
             token=os.environ.get("HF_TOKEN"),
         )
+
+        # Apply the fine-tuned LoRA adapter on top of the base model
+        print(f"Loading LoRA adapter from {ADAPTER_REPO_ID}...")
+        try:
+            _model = PeftModel.from_pretrained(
+                _model,
+                ADAPTER_REPO_ID,
+                token=os.environ.get("HF_TOKEN"),
+            )
+            print("LoRA adapter applied successfully.")
+        except Exception as adapter_error:
+            print(
+                f"Warning: Could not load adapter ({adapter_error}). Using base model."
+            )
 
         # Move model to CUDA GPU memory if available
         if torch.cuda.is_available():

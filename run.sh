@@ -12,9 +12,8 @@ setup() {
   fi
   # shellcheck disable=SC1091
   source .venv/bin/activate
-  python -m pip install --upgrade pip
-  pip install -r requirements.txt
-  pip install -r requirements-dev.txt
+  python -m pip install --disable-pip-version-check -r requirements.txt
+  python -m pip install --disable-pip-version-check gradio==6.16.0 ruff==0.15.16
 }
 
 ensure_venv() {
@@ -32,15 +31,17 @@ case "$TARGET" in
     ;;
   verify)
     setup
-    python verify_code.py
+    python -m ruff format --check .
+    python -m ruff check .
+    python -m compileall app.py src
     ;;
   format)
     setup
     python -m ruff format .
     ;;
-  test)
+  lint)
     setup
-    pytest
+    python -m ruff check .
     ;;
   app|run|*)
     ensure_venv

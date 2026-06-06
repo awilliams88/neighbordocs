@@ -44,24 +44,16 @@ Award surfaces:
 
 ## Models and planned integrations
 
-Current MVP:
+| Model or tool | Role | Status | Parameter count |
+| --- | --- | --- | --- |
+| `pypdf` | Basic PDF text extraction | Active | Not a model |
+| `nvidia/NVIDIA-Nemotron-Parse-v1.1` | Layout-aware PDF/PPT extraction | Planned | <1B class |
+| Small text reasoner | Summary, obligations, deadlines, next actions | Planned | <=4B target |
+| `openbmb/MiniCPM-V-4.6` | Optional scanned-image/document understanding | Candidate | 1B class |
 
-- `pypdf` for basic PDF text extraction.
-- Rule-based placeholder summary while model integrations are added.
-
-Planned model path:
-
-- NVIDIA Nemotron Parse or a comparable small document parser for layout-aware
-  extraction.
-- A small reasoning model under the 32B hackathon limit for summarization,
-  action extraction, and checklist generation.
-- Optional multilingual helper model for simple translation or local-language
-  explanation.
-- Modal compute may be used for heavier parsing or model experiments using the
-  hackathon Modal credits.
-
-All model choices will stay within the hackathon rule that every model must be
-under 32B total parameters.
+The final model list will stay within the hackathon rule that every model must
+be under 32B total parameters. The first planned sponsor path is NVIDIA
+Nemotron Parse because document extraction is central to the product.
 
 ## Architecture
 
@@ -76,11 +68,12 @@ Upload + notes
 
 Key files:
 
-- `app.py` - Gradio UI, upload handling, extraction, and response generation.
-- `requirements.txt` - Hugging Face Space runtime dependencies.
-- `requirements-dev.txt` - local development and verification dependencies.
-- `run.sh` - setup, format, test, verify, and local app launch.
-- `verify_code.py` - formatter, linter, and test wrapper.
+- `app.py` - thin Gradio launch entry point.
+- `src/neighbordocs/config.py` - app constants, URLs, and model plan.
+- `src/neighbordocs/core.py` - document extraction and analysis logic.
+- `src/neighbordocs/ui.py` - Gradio layout and event wiring.
+- `requirements.txt` - runtime dependencies.
+- `run.sh` - setup, lint, format, verify, and local app launch.
 
 ## Local setup
 
@@ -94,6 +87,10 @@ Key files:
 ```bash
 ./run.sh verify
 ```
+
+`verify` runs Ruff format checks, Ruff lint, and Python compile checks using
+default Ruff rules. The project intentionally does not include a default test
+suite while the hackathon apps are being built quickly.
 
 ## Deployment
 
@@ -113,5 +110,5 @@ The Hugging Face Space is published under the Build Small Hackathon org:
 ## Current limitations
 
 - OCR for scanned images is not implemented yet.
-- The summary is currently a scaffolded MVP response, not a final model output.
+- The summary is currently a rule-based MVP response, not a final model output.
 - Multilingual output is planned but not implemented yet.

@@ -1,146 +1,155 @@
 ---
-title: NeighborDocs
-emoji: 📄
-colorFrom: blue
-colorTo: gray
+title: InnerSpace
+emoji: 🧠
+colorFrom: violet
+colorTo: slate
 sdk: gradio
 sdk_version: 6.16.0
 app_file: app.py
 python_version: "3.12"
-short_description: Plain-English help for everyday paperwork
+short_description: Privacy-first offline cognitive journal & reflection coach
 pinned: false
 ---
 
-# NeighborDocs
+# InnerSpace
 
-NeighborDocs is a practical document helper for everyday paperwork: bills,
-school notices, receipts, forms, reports, and other documents that people often
-need to understand quickly.
+**InnerSpace** is a private, offline-first cognitive journal and reflection companion designed to run on resource-constrained edge devices. By utilizing the lightweight **`openbmb/MiniCPM5-1B-SFT`** model, InnerSpace extracts emotional sentiment, maps key life categories, flags potential cognitive distortions, and prompts self-reflection using Cognitive Behavioral Therapy (CBT) principles.
 
-GitHub repo: [awilliams88/neighbordocs](https://github.com/awilliams88/neighbordocs)
+GitHub Repository: [awilliams88/innerspace](https://github.com/awilliams88/innerspace)
+Hugging Face Space: [build-small-hackathon/innerspace](https://huggingface.co/spaces/build-small-hackathon/innerspace)
 
-## What it does
+---
 
-- Accepts a PDF, TXT, or MD upload plus optional user notes.
-- Extracts readable text from the first pages of a PDF.
-- Lets the user choose a sponsor-aligned model strategy.
-- Lets the user choose a CPU or ZeroGPU runtime target.
-- Shows an extracted-text preview.
-- Extracts visible dates, amounts, likely document type, and attention signals.
-- Produces a plain-English summary and next-step checklist.
-- Uses custom Gradio styling so judges see a polished workflow rather than a
-  default scaffold.
+## 🧠 Core Features
 
-## Hackathon fit
+* **Calming Mindful Interface**: A customized, premium dark-slate/violet visual dashboard optimized for reflection.
+* **CBT Reflector Coach**: Engages the writer with open-ended, therapeutic prompts to explore underlying thoughts.
+* **Cognitive Distortion Scanner**: Highlights thinking patterns like *Catastrophizing*, *All-or-Nothing Thinking*, or *Should Statements* to raise cognitive awareness.
+* **Hybrid Inference**: Run locally on CUDA GPU (ZeroGPU space) with serverless API fallbacks and local rule-based keyword heuristics.
+* **Zero External Dependencies (Offline Heuristics)**: Fully functional without an internet connection or Hugging Face tokens using local keyword parsing.
 
-Track: Backyard AI.
+---
 
-Why this project exists: many useful AI tools should help with small, everyday
-problems. NeighborDocs focuses on making ordinary paperwork easier to understand
-without needing a large model.
+## ⚙️ Application Workflow Guidelines
 
-Award surfaces:
-
-- Backyard AI: direct real-world usefulness.
-- OpenBMB: utilizing OpenBMB MiniCPM text model to target the $10,000 OpenBMB cash prize track.
-- Tiny Titan: using a genuinely tiny model (1.2B parameters, well below the 4B parameter cap).
-- Best Demo: clear before/after document workflow.
-- OpenAI / Codex: built and maintained with Codex; GitHub history is preserved.
-
-## Models and integrations
-
-| Model or tool | Role | Status | Parameter count |
-| --- | --- | --- | --- |
-| `pypdf` | Basic PDF text extraction | Active | Not a model |
-| `openbmb/MiniCPM-1B-sft-bf16` | Summary, obligations, deadlines, next actions | Active | 1.2B |
-
-The model list stays within the hackathon rule that every model must be under 32B total parameters. We focus on a single, high-quality, lightweight sponsor model to maximize performance and target OpenBMB cash prizes.
-
-
-## Runtime and ZeroGPU plan
-
-The current public Space is kept on `cpu-basic` because the active MVP is a
-rule-based document interpreter. The project now includes a Gradio-callable
-ZeroGPU hook in `src/neighbordocs/gpu.py`, so the app has a clean place to wire
-the final GPU-backed parser or <=4B reasoner.
-
-When the final model call is attached, switch the Space hardware with the HF
-CLI:
-
-```bash
-hf spaces settings build-small-hackathon/neighbordocs --hardware zero-a10g
-```
-
-ZeroGPU requirements for this project:
-
-- The app must stay Gradio-based.
-- The GPU model work must run inside the `@spaces.GPU` function.
-- `spaces` must not be added to `requirements.txt`; the Space runtime manages it.
-- The selected model must remain under the hackathon 32B parameter cap.
-- The Space should be switched back to `cpu-basic` if the GPU model path is not
-  active, otherwise Hugging Face will reject or fail the runtime.
-
-## Architecture
+The application is built around single-responsibility layers following SOLID principles:
 
 ```text
-Upload + notes
-  -> file type router
-  -> sponsor model strategy selector
-  -> CPU or ZeroGPU runtime selector
-  -> PDF/text extraction
-  -> extracted text preview
-  -> dates, amounts, document type, and attention signals
-  -> model or rule-based document interpreter
-  -> plain-English summary + next steps
++-----------------------+
+|  Gradio UI (ui.py)    | <--- Renders dark-violet dashboard, text box, file uploads
++-----------+-----------+
+            |
+            v
++-----------+-----------+
+| Core Facade (core.py) | <--- Unified API Router exposing analyze_journal_ui
++-----------+-----------+
+            |
+            v
++-----------+-----------+
+| Analyzer (analyzer.py)| <--- Orchestrates the diary parsing & prompt generation
++-----+-----+-----+-----+
+      |     |     |
+      |     |     +-------------------------+
+      |     |                               |
+      v     v                               v
++-----+-----+-----+                 +-------+-------+
+| Inference Engine|                 | Parser Engine |
+| (inference.py)  |                 |  (parser.py)  |
+|                 |                 |               |
+| - Local bf16    |                 | - Text/MD     |
+| - ZeroGPU A10G  |                 | - Section     |
+| - HF API Client |                 |   Splitting   |
++-----------------+                 +---------------+
+      | (If Inference Fails)
+      v
++-----+-----+-----+
+| Heuristic Engine|
+| (heuristics.py) | <--- Local offline keyword analyzer for sentiment/CBT fallbacks
++-----------------+
 ```
 
-Key files:
+1. **User Input**: The user writes a journal entry in the writing block or uploads a `.txt`/`.md` entry.
+2. **Core Routing**: The click event invokes `analyze_journal_ui` through [core.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/core.py).
+3. **Model Generation**: The prompt is processed by the 1.2B parameter OpenBMB model in `inference.py`. It runs on a GPU locally when available.
+4. **API Fallback**: If the local GPU/CPU is busy or unavailable, the system transparently falls back to the Hugging Face Serverless API.
+5. **Heuristic Fallback**: If both inference paths fail (e.g., completely offline with no token), the system falls back to rule-based keyword matchers in `heuristics.py` to extract basic emotions and distortions, ensuring the UI remains active and useful.
 
-- `app.py` - thin Gradio launch entry point.
-- `src/neighbordocs/config.py` - app constants, URLs, and model plan.
-- `src/neighbordocs/core.py` - document extraction and analysis logic.
-- `src/neighbordocs/gpu.py` - ZeroGPU-compatible model integration hook.
-- `src/neighbordocs/ui.py` - Gradio layout and event wiring.
-- `src/neighbordocs/styles.py` - custom CSS for a cleaner judge-facing UI.
-- `examples/` - sample demo documents for judges and screenshots.
-- `requirements.txt` - runtime dependencies.
-- `run.sh` - setup, lint, format, verify, and local app launch.
+---
 
-## Local setup
+## 🚀 Modal.com Fine-Tuning Guide
 
+Fine-tuning small models locally is difficult due to massive VRAM requirements. We resolve this by using **Modal.com**—a serverless cloud compute service that lets you run code on high-performance GPUs (like A10G or A100) on-demand, charging only for the exact seconds the GPU is active.
+
+We have included a complete training script, [tune_journal.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/tune_journal.py), which performs **QLoRA (Quantized Low-Rank Adaptation)** to teach `openbmb/MiniCPM5-1B-SFT` how to identify reflections and CBT structures.
+
+### Step-by-Step Training Guide
+
+#### 1. Setup your Modal Account
+1. Go to [Modal.com](https://modal.com/) and sign up for an account.
+2. Install the Modal Python SDK on your machine (it is listed in our requirements file):
+   ```bash
+   pip install modal
+   ```
+3. Authenticate your local machine with the Modal environment:
+   ```bash
+   modal token set
+   ```
+   This will open a browser window to link your local CLI to your Modal billing and workspace.
+
+#### 2. Create your Hugging Face Secret on Modal
+To push the fine-tuned model back to your Hugging Face account, you need to store your write-access token securely on Modal:
+1. Navigate to your Modal Dashboard -> **Secrets**.
+2. Click **Create Secret** -> Choose **Hugging Face** template (or Custom).
+3. Name the secret `my-huggingface-secret`.
+4. Add the key: `HF_TOKEN` and set the value to your Hugging Face Access Token (User Access Token with Write permission).
+
+#### 3. Run the Fine-Tuning Script
+Run the script using the Modal runner. The command below tells Modal to upload the script, build the remote container, allocate an NVIDIA A10G GPU, mount a persistent volume, and begin training:
+```bash
+modal run tune_journal.py
+```
+
+#### 4. What the Script Does under the Hood
+* **Container Creation**: Modal builds a cloud container image containing PyTorch, Hugging Face `transformers`, `peft`, `trl` (SFTTrainer), and `bitsandbytes` automatically.
+* **Quantization (QLoRA)**: The base model is loaded in **4-bit precision (NF4)**. This allows a 1.2B parameter model to fit comfortably in a fraction of GPU memory, reducing costs.
+* **LoRA Target Modules**: The script injects Low-Rank adapters into the attention layers (`q_proj`, `v_proj`, etc.). Only 0.5% of the model parameters are trained, protecting the model from forgetting concepts.
+* **Checkpoint Volume**: Training outputs are saved to a persistent cloud disk volume named `inner-space-checkpoints` so you do not lose progress if the run terminates.
+* **Push to Hub**: If the secret is set, it pushes the completed adapters directly to the HF repository (`build-small-hackathon/inner-space-1b-sft-cbt`).
+
+---
+
+## 🛠️ Codebase Architecture
+
+The project directory contains:
+- [app.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/app.py) - Launch and hosting configurations.
+- [config.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/config.py) - Central settings and repo URLs.
+- [core.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/core.py) - API Facade re-exporting key entry points.
+- [analyzer.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/analyzer.py) - Analysis orchestrator and ZeroGPU wrapper.
+- [inference.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/inference.py) - Lazy model loader and local/remote text generators.
+- [parser.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/parser.py) - IO reader and section separator.
+- [heuristics.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/heuristics.py) - Keyword match fallback system.
+- [ui.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/ui.py) - Gradio block layout and interaction hooks.
+- [styles.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/styles.py) - Calming violet custom styling overrides.
+- [tune_journal.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/tune_journal.py) - Modal fine-tuning script.
+- [requirements.txt](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/requirements.txt) - Dependency catalog.
+- [run.sh](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/run.sh) - Local utility script for setup, formatting, linting, and verifying.
+
+---
+
+## 🖥️ Local Run & Quality Verification
+
+To set up environment dependencies locally:
 ```bash
 ./run.sh setup
-./run.sh
 ```
 
-## Quality checks
+To launch the Gradio development server:
+```bash
+./run.sh app
+```
 
+To run quality checks (Ruff formatting, Ruff linting, Pyright type check, and python compilation):
 ```bash
 ./run.sh verify
 ```
-
-`verify` runs Ruff format checks, Ruff lint, and Python compile checks using
-default Ruff rules. The project intentionally does not include a default test
-suite while the hackathon apps are being built quickly.
-
-## Deployment
-
-The Hugging Face Space is published under the Build Small Hackathon org:
-
-[build-small-hackathon/neighbordocs](https://huggingface.co/spaces/build-small-hackathon/neighbordocs)
-
-## Submission checklist
-
-- Hugging Face Space: created.
-- GitHub repo: [awilliams88/neighbordocs](https://github.com/awilliams88/neighbordocs).
-- ZeroGPU hook: fully wired with OpenBMB model support.
-- Demo video: pending.
-- Social post: pending.
-- Final model list and parameter counts: `openbmb/MiniCPM-1B-sft-bf16` (1.2B).
-
-## Current limitations
-
-- OCR for scanned images is not implemented yet.
-- The app uses the OpenBMB model on GPU (via ZeroGPU) with a rule-based CPU parser fallback when GPU/API token is unavailable.
-- Multilingual output is planned but not implemented yet.
-
+All python files are checked against Pyright and Ruff to ensure high code quality.

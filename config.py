@@ -9,8 +9,8 @@ SUPPORTED_SUFFIXES = {".txt", ".md"}
 ENTRY_LIMIT = 5000  # Character limit for daily logs
 
 # Repositories URLs
-GITHUB_URL = "https://github.com/awilliams88/neighbordocs"
-SPACE_URL = "https://huggingface.co/spaces/build-small-hackathon/neighbordocs"
+GITHUB_URL = "https://github.com/awilliams88/innerspace"
+SPACE_URL = "https://huggingface.co/spaces/build-small-hackathon/innerspace"
 
 # Targeted OpenBMB model configuration
 MODEL_ID = "openbmb/MiniCPM5-1B-SFT"

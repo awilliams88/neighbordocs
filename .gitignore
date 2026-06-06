@@ -11,4 +11,9 @@ dist/
 build/
 *.egg-info/
 *.env
+.modal/
+*.bin
+*.pt
+*.safetensors
+*.gguf
 

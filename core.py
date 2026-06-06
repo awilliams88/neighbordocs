@@ -72,7 +72,6 @@ def get_model_and_tokenizer() -> tuple[Any, Any]:
         warnings.filterwarnings(
             "ignore",
             message=".*GenerationMixin.*",
-            category=UserWarning,
         )
 
         from transformers import AutoModelForCausalLM, AutoTokenizer

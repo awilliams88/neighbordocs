@@ -7,14 +7,9 @@ from pathlib import Path
 from pypdf import PdfReader
 
 from .config import (
-    DEFAULT_MODEL_KEY,
-    DEFAULT_RUNTIME_KEY,
-    MODEL_CHOICES,
-    MODEL_KEY_BY_LABEL,
+    MODEL_ID,
     PDF_PAGE_LIMIT,
     PREVIEW_LIMIT,
-    RUNTIME_CHOICES,
-    RUNTIME_KEY_BY_LABEL,
     SUPPORTED_SUFFIXES,
 )
 from .gpu import run_model_inference
@@ -49,35 +44,23 @@ def extract_text(file_path: str | None) -> str:
 def analyze_document(
     file_path: str | None,
     notes: str,
-    model_label: str | None,
-    runtime_label: str | None,
 ) -> DocumentReport:
     text = extract_text(file_path)
     preview = text[:PREVIEW_LIMIT] if text else "No readable text found."
     user_context = notes.strip()
-    model_choice = get_model_choice(model_label)
-    runtime_choice = get_runtime_choice(runtime_label)
-
-    # Determine if we should attempt ZeroGPU local run
-    use_zerogpu = runtime_choice["label"] == RUNTIME_CHOICES["zerogpu"]["label"]
 
     # Generate prompt
     prompt = _build_model_prompt(preview, user_context)
 
-    # Run inference
-    response, log_details = run_model_inference(prompt, use_zerogpu=use_zerogpu)
+    # Run inference (will use ZeroGPU if CUDA available, else Serverless API)
+    response, log_details = run_model_inference(prompt)
 
     # Combine selection log with execution log
     model_path = "\n".join(
         [
-            f"Selected path: {model_choice['label']}",
-            f"Primary model: {model_choice['model']}",
-            f"Sponsor surface: {model_choice['sponsor']}",
-            f"Parameter compliance: {model_choice['parameters']}",
-            f"Model status: {model_choice['status']}",
-            f"Runtime target: {runtime_choice['label']}",
-            f"Runtime status: {runtime_choice['status']}",
-            f"Runtime fit: {runtime_choice['best_for']}",
+            f"Primary model: {MODEL_ID}",
+            "Parameters: 1.5B",
+            "Execution flow: local GPU (on ZeroGPU Space) with hybrid serverless fallback",
             "---",
             log_details,
         ]
@@ -89,8 +72,8 @@ def analyze_document(
     else:
         # Fail-safe local rule-based fallback
         key_details = _build_key_details(text)
-        summary = _build_summary(text, user_context, model_choice)
-        checklist = _build_checklist(text, user_context, model_choice)
+        summary = _build_summary(text, user_context)
+        checklist = _build_checklist(text, user_context)
 
     return DocumentReport(
         preview=preview,
@@ -99,16 +82,6 @@ def analyze_document(
         summary=summary,
         checklist=checklist,
     )
-
-
-def get_model_choice(model_label: str | None) -> dict[str, str]:
-    key = MODEL_KEY_BY_LABEL.get(model_label or "", DEFAULT_MODEL_KEY)
-    return MODEL_CHOICES[key]
-
-
-def get_runtime_choice(runtime_label: str | None) -> dict[str, str]:
-    key = RUNTIME_KEY_BY_LABEL.get(runtime_label or "", DEFAULT_RUNTIME_KEY)
-    return RUNTIME_CHOICES[key]
 
 
 def _extract_pdf_text(path: Path) -> str:
@@ -186,15 +159,14 @@ def _parse_sections(response: str) -> tuple[str, str, str]:
     return key_details, summary, checklist
 
 
-def _build_summary(text: str, notes: str, model_choice: dict[str, str]) -> str:
+def _build_summary(text: str, notes: str) -> str:
     if not text or text == "No file uploaded.":
         return "Upload a document to generate a plain-English explanation."
 
     bullets = [
         "Readable document text was extracted and prepared for small-model reasoning.",
-        f"Recommended sponsor path: {model_choice['label']}.",
-        f"Why this path fits: {model_choice['best_for']}",
-        "The final model-backed version will explain the document, surface obligations, and identify dates or next actions.",
+        f"Primary model: {MODEL_ID}",
+        "The model-backed version will explain the document, surface obligations, and identify dates or next actions.",
     ]
 
     if notes:
@@ -236,7 +208,7 @@ def _build_key_details(text: str) -> str:
     return "\n".join(lines)
 
 
-def _build_checklist(text: str, notes: str, model_choice: dict[str, str]) -> str:
+def _build_checklist(text: str, notes: str) -> str:
     if not text or text == "No file uploaded.":
         return "- Upload a PDF, TXT, or MD file."
 
@@ -244,7 +216,6 @@ def _build_checklist(text: str, notes: str, model_choice: dict[str, str]) -> str
         "Confirm the document type and sender.",
         "Look for due dates, payment amounts, signatures, or missing attachments.",
         "Ask a follow-up question if any term or obligation is unclear.",
-        f"Use the selected model path for: {model_choice['best_for']}",
     ]
 
     if notes:

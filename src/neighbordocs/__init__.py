@@ -1,1 +1,0 @@
-"""NeighborDocs application package."""

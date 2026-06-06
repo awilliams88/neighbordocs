@@ -1,23 +1,32 @@
 from __future__ import annotations
 
+import os
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
+import torch
 from pypdf import PdfReader
 
-from .config import (
+from config import (
     MODEL_ID,
     PARAMETER_COUNT,
     PDF_PAGE_LIMIT,
     PREVIEW_LIMIT,
     SUPPORTED_SUFFIXES,
 )
-from .gpu import run_model_inference
+
+# Global variables for model caching
+_tokenizer: Any = None
+_model: Any = None
 
 
 @dataclass(frozen=True)
 class DocumentReport:
+    """Dataclass to hold the structured results of a document analysis."""
+
     preview: str
     model_path: str
     key_details: str
@@ -25,7 +34,122 @@ class DocumentReport:
     checklist: str
 
 
+# ZeroGPU compatibility helper: uses spaces.GPU if available, else a local fallback
+try:
+    import spaces  # type: ignore
+except ImportError:
+
+    class _LocalSpacesFallback:
+        @staticmethod
+        def GPU(
+            duration: int = 30,
+        ) -> Callable[[Callable[..., str]], Callable[..., str]]:
+            def decorator(function: Callable[..., str]) -> Callable[..., str]:
+                return function
+
+            return decorator
+
+    spaces = _LocalSpacesFallback()
+
+
+def get_model_and_tokenizer() -> tuple[Any, Any]:
+    """Loads and returns the tokenizer and model from HF, using a compatibility patch for newer transformers v5+."""
+    global _model, _tokenizer
+    if _model is None:
+        import transformers.utils
+        import transformers.utils.import_utils
+
+        # Monkey-patch to fix dynamic import compatibility of older OpenBMB model code in transformers v5+
+        transformers.utils.is_torch_fx_available = lambda: True  # type: ignore
+        transformers.utils.import_utils.is_torch_fx_available = lambda: True  # type: ignore
+
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        print(f"Loading tokenizer for {MODEL_ID}...")
+        _tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
+        print(f"Loading model {MODEL_ID}...")
+        _model = AutoModelForCausalLM.from_pretrained(
+            MODEL_ID,
+            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+            low_cpu_mem_usage=True,
+            trust_remote_code=True,
+        )
+    return _model, _tokenizer
+
+
+@spaces.GPU(duration=30)
+def _generate_on_gpu(prompt: str) -> str:
+    """Runs causal language generation on GPU using transformers."""
+    model, tokenizer = get_model_and_tokenizer()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Moving model to device: {device}...")
+    model.to(device)
+
+    messages = [{"role": "user", "content": prompt}]
+    text = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
+    model_inputs = tokenizer([text], return_tensors="pt").to(device)
+
+    print("Generating response...")
+    generated_ids = model.generate(
+        **model_inputs,
+        max_new_tokens=512,
+        do_sample=True,
+        temperature=0.7,
+        top_p=0.9,
+    )
+    generated_ids = [
+        output_ids[len(input_ids) :]
+        for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+    ]
+    response: str = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    return response
+
+
+def run_model_inference(prompt: str, use_zerogpu: bool = False) -> tuple[str, str]:
+    """Orchestrates model inference using local ZeroGPU or Serverless Inference API fallback."""
+    log_lines: list[str] = []
+
+    if use_zerogpu:
+        if torch.cuda.is_available():
+            log_lines.append(
+                "ZeroGPU hardware detected. Initiating local GPU execution..."
+            )
+            try:
+                response = _generate_on_gpu(prompt)
+                log_lines.append("Local GPU execution completed successfully.")
+                return response, "\n".join(log_lines)
+            except Exception as e:
+                log_lines.append(
+                    f"Local GPU execution failed: {e}. Falling back to serverless API..."
+                )
+        else:
+            log_lines.append(
+                "ZeroGPU requested, but CUDA is not available. Falling back to serverless API..."
+            )
+
+    # Serverless API Fallback path
+    log_lines.append(
+        f"Initiating Hugging Face Serverless Inference API ({MODEL_ID})..."
+    )
+    try:
+        from huggingface_hub import InferenceClient
+
+        client = InferenceClient(MODEL_ID, token=os.environ.get("HF_TOKEN"))
+        messages = [{"role": "user", "content": prompt}]
+        completion = client.chat_completion(messages=messages, max_tokens=512)
+        response = completion.choices[0].message.content or ""
+        log_lines.append("Serverless API execution completed successfully.")
+        return response, "\n".join(log_lines)
+    except Exception as e:
+        log_lines.append(f"Serverless API execution failed: {e}.")
+        log_lines.append("Falling back to local CPU heuristics...")
+        return "", "\n".join(log_lines)
+
+
 def extract_text(file_path: str | None) -> str:
+    """Extracts raw text from PDF, TXT, or MD files based on suffix."""
     if not file_path:
         return "No file uploaded."
 
@@ -42,18 +166,16 @@ def extract_text(file_path: str | None) -> str:
     return f"Unsupported file type: {suffix or 'unknown'}. Try one of: {allowed}."
 
 
-def analyze_document(
-    file_path: str | None,
-    notes: str,
-) -> DocumentReport:
+def analyze_document(file_path: str | None, notes: str) -> DocumentReport:
+    """Main orchestrator: extracts text, runs model inference, parses sections, and returns the report."""
     text = extract_text(file_path)
     preview = text[:PREVIEW_LIMIT] if text else "No readable text found."
     user_context = notes.strip()
 
-    # Generate prompt
+    # Generate prompt for the model
     prompt = _build_model_prompt(preview, user_context)
 
-    # Run inference (will use ZeroGPU if CUDA available, else Serverless API)
+    # Run inference (will use local ZeroGPU if CUDA available, else Serverless API)
     response, log_details = run_model_inference(prompt)
 
     # Combine selection log with execution log
@@ -67,11 +189,10 @@ def analyze_document(
         ]
     )
 
-    # Parse response
+    # Parse response sections or fall back to rule-based parser on failures
     if response.strip():
         key_details, summary, checklist = _parse_sections(response)
     else:
-        # Fail-safe local rule-based fallback
         key_details = _build_key_details(text)
         summary = _build_summary(text, user_context)
         checklist = _build_checklist(text, user_context)
@@ -86,6 +207,7 @@ def analyze_document(
 
 
 def _extract_pdf_text(path: Path) -> str:
+    """Extracts text from the first pages of a PDF file using pypdf."""
     reader = PdfReader(str(path))
     pages = [page.extract_text() or "" for page in reader.pages[:PDF_PAGE_LIMIT]]
     text = "\n".join(part.strip() for part in pages if part.strip())
@@ -93,6 +215,7 @@ def _extract_pdf_text(path: Path) -> str:
 
 
 def _build_model_prompt(text: str, notes: str) -> str:
+    """Builds the structured text prompt for the reasoning model."""
     user_context = f"\nUser request/context: {notes}" if notes.strip() else ""
     return f"""You are a helpful paperwork assistant. Analyze the following document text and notes, then return a response containing three sections separated by '=== SECTION ===' markers:
 
@@ -115,6 +238,7 @@ Document text:
 
 
 def _parse_sections(response: str) -> tuple[str, str, str]:
+    """Parses response containing === KEY DETAILS ===, === SUMMARY ===, and === CHECKLIST === sections."""
     key_details = "- No key details extracted by model."
     summary = "No model summary generated."
     checklist = "- No actions extracted by model."
@@ -161,6 +285,7 @@ def _parse_sections(response: str) -> tuple[str, str, str]:
 
 
 def _build_summary(text: str, notes: str) -> str:
+    """Generates a rule-based plain-English explanation fallback."""
     if not text or text == "No file uploaded.":
         return "Upload a document to generate a plain-English explanation."
 
@@ -177,6 +302,7 @@ def _build_summary(text: str, notes: str) -> str:
 
 
 def _build_key_details(text: str) -> str:
+    """Extracts dates, amounts, and guesses document type as a fallback."""
     if not text or text == "No file uploaded.":
         return "- No document details found yet."
 
@@ -210,6 +336,7 @@ def _build_key_details(text: str) -> str:
 
 
 def _build_checklist(text: str, notes: str) -> str:
+    """Generates next actions checklist as a fallback."""
     if not text or text == "No file uploaded.":
         return "- Upload a PDF, TXT, or MD file."
 
@@ -228,6 +355,7 @@ def _build_checklist(text: str, notes: str) -> str:
 
 
 def _extract_unique(patterns: list[str], text: str) -> list[str]:
+    """Finds all unique regex matches in text."""
     values: list[str] = []
     for pattern in patterns:
         values.extend(match.group(0).strip() for match in re.finditer(pattern, text))
@@ -235,6 +363,7 @@ def _extract_unique(patterns: list[str], text: str) -> list[str]:
 
 
 def _guess_document_type(text: str) -> str:
+    """Guesses document category based on keyword matching."""
     lowered = text.lower()
     if any(word in lowered for word in ["amount due", "balance", "late fee", "bill"]):
         return "bill or payment notice"

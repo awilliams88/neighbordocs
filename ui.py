@@ -2,18 +2,20 @@ from __future__ import annotations
 
 import gradio as gr
 
-from .config import (
+from typing import Any
+
+from config import (
     APP_DESCRIPTION,
     APP_TITLE,
     GITHUB_URL,
     SPACE_URL,
 )
-from .core import analyze_document
+from core import analyze_document
 
 
-def get_theme() -> gr.themes.Theme:
-    # Use Soft theme as base with dark hue custom overrides in CSS
-    theme = gr.themes.Soft(
+def get_theme() -> Any:
+    """Returns the custom soft theme configured for dark slate styling."""
+    theme = gr.themes.Soft(  # type: ignore
         primary_hue="teal",
         secondary_hue="slate",
         neutral_hue="slate",
@@ -22,7 +24,8 @@ def get_theme() -> gr.themes.Theme:
 
 
 def create_app() -> gr.Blocks:
-    # Do NOT pass theme in constructor to fix Gradio 6.0 warning
+    """Creates and lays out the Gradio interface with custom Codex styling."""
+    # Gradio blocks container for the interface
     with gr.Blocks(title=APP_TITLE) as demo:
         gr.Markdown(
             f"# {APP_TITLE}\n{APP_DESCRIPTION}",
@@ -30,7 +33,7 @@ def create_app() -> gr.Blocks:
         )
 
         with gr.Row():
-            # Left Column: Inputs & Controls (scale=1 is integer)
+            # Left Column: User Input panels
             with gr.Column(scale=1):
                 file_input = gr.File(
                     label="Upload Document (.pdf, .txt, .md)",
@@ -45,7 +48,7 @@ def create_app() -> gr.Blocks:
                     "Analyze Document", variant="primary", elem_classes=["nd-btn"]
                 )
 
-            # Right Column: Clean Tabbed Outputs (scale=1 is integer)
+            # Right Column: Tabbed Output panels
             with gr.Column(scale=1):
                 with gr.Tabs():
                     with gr.TabItem("📄 Summary & Checklist"):
@@ -78,6 +81,7 @@ def create_app() -> gr.Blocks:
                             elem_classes=["nd-log-box"],
                         )
 
+        # Demo examples for one-click test runs
         gr.Examples(
             examples=[
                 [
@@ -97,6 +101,7 @@ def create_app() -> gr.Blocks:
             elem_id="nd-links",
         )
 
+        # Trigger logic execution on button click
         run_button.click(
             fn=_analyze_for_ui,
             inputs=[file_input, notes_input],
@@ -116,6 +121,7 @@ def _analyze_for_ui(
     file_path: str | None,
     notes: str,
 ) -> tuple[str, str, str, str, str]:
+    """Wraps core analysis function for Gradio UI mapping."""
     report = analyze_document(file_path, notes)
     return (
         report.preview,

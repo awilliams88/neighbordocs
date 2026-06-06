@@ -2,18 +2,22 @@ from __future__ import annotations
 
 import os
 
+# Disable Gradio Server-Side Rendering
 os.environ.setdefault("GRADIO_SSR_MODE", "false")
 
-from src.neighbordocs.runtime import patch_asyncio_cleanup_warning
+# Patch asyncio to ignore minor event loop warnings on teardown
+from runtime import patch_asyncio_cleanup_warning  # noqa: E402
 
 patch_asyncio_cleanup_warning()
 
-from src.neighbordocs import gpu as _gpu_runtime  # noqa: E402,F401
-from src.neighbordocs.styles import CUSTOM_CSS  # noqa: E402
-from src.neighbordocs.ui import create_app, get_theme  # noqa: E402
+# Import UI components and CSS styling
+from styles import CUSTOM_CSS  # noqa: E402
+from ui import create_app, get_theme  # noqa: E402
 
+# Build Gradio app block
 demo = create_app()
 theme = get_theme()
 
+# Start local test server if run as script
 if __name__ == "__main__":
     demo.launch(theme=theme, css=CUSTOM_CSS)

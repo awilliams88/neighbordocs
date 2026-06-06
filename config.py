@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 # Application metadata and descriptions
-APP_TITLE = "NeighborDocs"
-APP_DESCRIPTION = "Plain-English help for everyday paperwork."
+APP_TITLE = "InnerSpace"
+APP_DESCRIPTION = "Privacy-first offline cognitive journal & reflection coach."
 
-# File processing and size thresholds
-SUPPORTED_SUFFIXES = {".pdf", ".txt", ".md"}
-PDF_PAGE_LIMIT = 3
-PREVIEW_LIMIT = 2000
+# Journal settings
+SUPPORTED_SUFFIXES = {".txt", ".md"}
+ENTRY_LIMIT = 5000  # Character limit for daily logs
 
 # Repositories URLs
 GITHUB_URL = "https://github.com/awilliams88/neighbordocs"

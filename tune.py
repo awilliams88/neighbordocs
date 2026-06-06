@@ -180,8 +180,6 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
 
     # Push to Hugging Face Hub if token is available
     if hf_token:
-        print(f"[DEBUG] hf_token value: '{hf_token}'")
-        print(f"[DEBUG] HF-related env vars: { {k: v for k, v in os.environ.items() if 'HF' in k or 'HUGGING' in k} }")
         login(token=hf_token)
         print(
             f"Pushing fine-tuned adapter to Hugging Face Hub repository: {repo_id}..."
@@ -193,26 +191,6 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
         print("HF_TOKEN not set or provided. Skipping publishing step.")
 
 
-# Lightweight function to verify HF token injection without running training
-@app.function(
-    image=image,
-    secrets=[modal.Secret.from_name("huggingface-secret")],
-)
-def test_token():
-    """Prints the HF_TOKEN value from the container environment for debugging."""
-    from huggingface_hub import whoami
-
-    token = os.environ.get("HF_TOKEN")
-    print(f"HF_TOKEN raw value: '{token}'")
-    hf_vars = {k: v for k, v in os.environ.items() if "HF" in k or "HUGGING" in k}
-    print(f"All HF-related env vars: {hf_vars}")
-    if token:
-        info = whoami(token=token)
-        print(f"Authenticated as: {info['name']}")
-    else:
-        print("No HF_TOKEN found in environment.")
-
-
 @app.local_entrypoint()
 def main():
-    test_token.remote()
+    train_lora.remote()

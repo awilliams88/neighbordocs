@@ -13,6 +13,41 @@ from pypdf import PdfReader
 # Load environment variables on import
 import runtime  # noqa: F401
 
+# Monkey-patch to fix compatibility issues of older OpenBMB model code in newer transformers
+try:
+    import transformers.utils
+    import transformers.utils.import_utils
+
+    transformers.utils.is_torch_fx_available = lambda: True  # type: ignore
+    transformers.utils.import_utils.is_torch_fx_available = lambda: True  # type: ignore
+
+    # Patch PreTrainedModel.get_expanded_tied_weights_keys to handle list-based _tied_weights_keys in older models
+    from transformers import PreTrainedModel
+
+    original_get_expanded_tied_weights_keys = (
+        PreTrainedModel.get_expanded_tied_weights_keys
+    )
+
+    def patched_get_expanded_tied_weights_keys(
+        self, all_submodels: bool = False
+    ) -> dict:
+        if hasattr(self, "_tied_weights_keys") and isinstance(
+            self._tied_weights_keys, list
+        ):
+            new_tied_weights = {}
+            for key in self._tied_weights_keys:
+                new_tied_weights[key] = "model.embed_tokens.weight"
+            self._tied_weights_keys = new_tied_weights
+        return original_get_expanded_tied_weights_keys(
+            self, all_submodels=all_submodels
+        )
+
+    PreTrainedModel.get_expanded_tied_weights_keys = (
+        patched_get_expanded_tied_weights_keys  # type: ignore
+    )
+except ImportError:
+    pass
+
 from config import (  # noqa: E402
     MODEL_ID,
     PARAMETER_COUNT,
@@ -56,16 +91,9 @@ except ImportError:
 
 
 def get_model_and_tokenizer() -> tuple[Any, Any]:
-    """Loads and returns the tokenizer and model from HF, using a compatibility patch for newer transformers v5+."""
+    """Loads and returns the tokenizer and model from HF, using compatibility patches for newer transformers versions."""
     global _model, _tokenizer
     if _model is None:
-        import transformers.utils
-        import transformers.utils.import_utils
-
-        # Monkey-patch to fix dynamic import compatibility of older OpenBMB model code in transformers v5+
-        transformers.utils.is_torch_fx_available = lambda: True  # type: ignore
-        transformers.utils.import_utils.is_torch_fx_available = lambda: True  # type: ignore
-
         import logging
         import warnings
 
@@ -81,7 +109,7 @@ def get_model_and_tokenizer() -> tuple[Any, Any]:
 
         logging.getLogger("transformers").addFilter(GenerationMixinFilter())
 
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
         print(f"Loading tokenizer for {MODEL_ID}...")
         _tokenizer = AutoTokenizer.from_pretrained(
@@ -89,9 +117,28 @@ def get_model_and_tokenizer() -> tuple[Any, Any]:
             trust_remote_code=True,
             token=os.environ.get("HF_TOKEN"),
         )
+
+        print(f"Loading configuration for {MODEL_ID}...")
+        config = AutoConfig.from_pretrained(
+            MODEL_ID,
+            trust_remote_code=True,
+            token=os.environ.get("HF_TOKEN"),
+        )
+        # Fix transformers v4.45+ configuration incompatibility with OpenBMB's custom modeling_minicpm.py
+        if hasattr(config, "rope_scaling") and isinstance(config.rope_scaling, dict):
+            rope_type = config.rope_scaling.get(
+                "type", config.rope_scaling.get("rope_type")
+            )
+            if rope_type in (None, "default"):
+                config.rope_scaling = None
+            else:
+                config.rope_scaling.setdefault("type", rope_type)
+                config.rope_scaling.setdefault("factor", 1.0)
+
         print(f"Loading model {MODEL_ID}...")
         _model = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
+            config=config,
             dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
             low_cpu_mem_usage=True,
             trust_remote_code=True,

@@ -30,6 +30,7 @@ MODEL_ID = "openbmb/MiniCPM5-1B-SFT"
     gpu="A10G",
     timeout=7200,
     volumes={"/checkpoints": volume},
+    secrets=[modal.Secret.from_name("huggingface-secret")],
 )
 def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     """Fine-tunes openbmb/MiniCPM5-1B-SFT on cognitive behavioral reflections using QLoRA."""
@@ -152,7 +153,7 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
         save_total_limit=2,
         report_to="none",
         dataset_text_field="text",
-        max_seq_length=512,
+        max_length=512,
     )
 
     # Start Training

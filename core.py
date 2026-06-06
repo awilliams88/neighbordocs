@@ -66,6 +66,15 @@ def get_model_and_tokenizer() -> tuple[Any, Any]:
         transformers.utils.is_torch_fx_available = lambda: True  # type: ignore
         transformers.utils.import_utils.is_torch_fx_available = lambda: True  # type: ignore
 
+        import warnings
+
+        # Ignore transformers v4.50+ GenerationMixin inheritance warning for third-party OpenBMB code
+        warnings.filterwarnings(
+            "ignore",
+            message=".*GenerationMixin.*",
+            category=UserWarning,
+        )
+
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         print(f"Loading tokenizer for {MODEL_ID}...")

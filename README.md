@@ -69,7 +69,7 @@ The application is built around single-responsibility layers following SOLID pri
 ```
 
 1. **User Input**: The user writes a journal entry in the writing block or uploads a `.txt`/`.md` entry.
-2. **Core Routing**: The click event invokes `analyze_journal_ui` through [core.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/core.py).
+2. **Core Routing**: The click event invokes `analyze_journal_ui` through [core.py](core.py).
 3. **Model Generation**: The prompt is processed by the 1.2B parameter OpenBMB model in `inference.py`. It runs on a GPU locally when available.
 4. **API Fallback**: If the local GPU/CPU is busy or unavailable, the system transparently falls back to the Hugging Face Serverless API.
 5. **Heuristic Fallback**: If both inference paths fail (e.g., completely offline with no token), the system falls back to rule-based keyword matchers in `heuristics.py` to extract basic emotions and distortions, ensuring the UI remains active and useful.
@@ -80,7 +80,7 @@ The application is built around single-responsibility layers following SOLID pri
 
 Fine-tuning small models locally is difficult due to massive VRAM requirements. We resolve this by using **Modal.com**—a serverless cloud compute service that lets you run code on high-performance GPUs (like A10G or A100) on-demand, charging only for the exact seconds the GPU is active.
 
-We have included a complete training script, [tune_journal.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/tune_journal.py), which performs **QLoRA (Quantized Low-Rank Adaptation)** to teach `openbmb/MiniCPM5-1B-SFT` how to identify reflections and CBT structures.
+We have included a complete training script, [tune_journal.py](tune_journal.py), which performs **QLoRA (Quantized Low-Rank Adaptation)** to teach `openbmb/MiniCPM5-1B-SFT` how to identify reflections and CBT structures.
 
 ### Step-by-Step Training Guide
 
@@ -121,18 +121,18 @@ modal run tune_journal.py
 ## 🛠️ Codebase Architecture
 
 The project directory contains:
-- [app.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/app.py) - Launch and hosting configurations.
-- [config.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/config.py) - Central settings and repo URLs.
-- [core.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/core.py) - API Facade re-exporting key entry points.
-- [analyzer.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/analyzer.py) - Analysis orchestrator and ZeroGPU wrapper.
-- [inference.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/inference.py) - Lazy model loader and local/remote text generators.
-- [parser.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/parser.py) - IO reader and section separator.
-- [heuristics.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/heuristics.py) - Keyword match fallback system.
-- [ui.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/ui.py) - Gradio block layout and interaction hooks.
-- [styles.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/styles.py) - Calming violet custom styling overrides.
-- [tune_journal.py](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/tune_journal.py) - Modal fine-tuning script.
-- [requirements.txt](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/requirements.txt) - Dependency catalog.
-- [run.sh](file:///Volumes/Code/HuggingFace/hackathon/projects/neighbordocs/run.sh) - Local utility script for setup, formatting, linting, and verifying.
+- [app.py](app.py) - Launch and hosting configurations.
+- [config.py](config.py) - Central settings and repo URLs.
+- [core.py](core.py) - API Facade re-exporting key entry points.
+- [analyzer.py](analyzer.py) - Analysis orchestrator and ZeroGPU wrapper.
+- [inference.py](inference.py) - Lazy model loader and local/remote text generators.
+- [parser.py](parser.py) - IO reader and section separator.
+- [heuristics.py](heuristics.py) - Keyword match fallback system.
+- [ui.py](ui.py) - Gradio block layout and interaction hooks.
+- [styles.py](styles.py) - Calming violet custom styling overrides.
+- [tune_journal.py](tune_journal.py) - Modal fine-tuning script.
+- [requirements.txt](requirements.txt) - Dependency catalog.
+- [run.sh](run.sh) - Local utility script for setup, formatting, linting, and verifying.
 
 ---
 

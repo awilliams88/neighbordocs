@@ -10,6 +10,7 @@ from config import (
     SPACE_URL,
 )
 from core import analyze_journal_ui
+from tuner_bridge import run_ui_fine_tuning
 
 
 def get_theme() -> Any:
@@ -89,6 +90,32 @@ def create_app() -> gr.Blocks:
                             lines=5,
                             elem_classes=["nd-log-box"],
                         )
+                    with gr.TabItem("⚙️ Cloud Model Tuner"):
+                        gr.Markdown(
+                            "### 🚀 1-Click Cloud Fine-Tuning & Publisher\n"
+                            "Fine-tune the cognitive reflection model (`openbmb/MiniCPM5-1B-SFT`) in the cloud using serverless GPUs on Modal.com, and publish the adapter directly to your Hugging Face space/account."
+                        )
+                        hf_token_input = gr.Textbox(
+                            label="Hugging Face Write Token (HF_TOKEN)",
+                            placeholder="hf_...",
+                            type="password",
+                        )
+                        repo_id_input = gr.Textbox(
+                            label="Target Hugging Face Repository",
+                            value="awilliams88/inner-space-1b-cbt",
+                            placeholder="username/repo-name",
+                        )
+                        tune_button = gr.Button(
+                            "Start Cloud Fine-Tuning",
+                            variant="secondary",
+                            elem_classes=["nd-btn"],
+                        )
+                        tuner_logs = gr.Textbox(
+                            label="Cloud Training Console Log Stream",
+                            lines=12,
+                            placeholder="Modal cloud logs will stream here in real-time once you start training...",
+                            elem_classes=["nd-log-box"],
+                        )
 
         # Demo examples for one-click test runs
         gr.Examples(
@@ -122,6 +149,13 @@ def create_app() -> gr.Blocks:
                 distortions_output,
                 reflection_output,
             ],
+        )
+
+        # Trigger Modal cloud tuning on button click
+        tune_button.click(
+            fn=run_ui_fine_tuning,
+            inputs=[hf_token_input, repo_id_input],
+            outputs=tuner_logs,
         )
 
     return demo

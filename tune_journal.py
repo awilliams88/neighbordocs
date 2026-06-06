@@ -29,9 +29,8 @@ MODEL_ID = "openbmb/MiniCPM5-1B-SFT"
     gpu="A10G",  # Targets single A10G GPU for cost-effective execution
     timeout=7200,  # 2 hours timeout
     volumes={"/checkpoints": volume},
-    secrets=[modal.Secret.from_name("my-huggingface-secret")],  # HF_TOKEN secret
 )
-def train_lora():
+def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     """Fine-tunes openbmb/MiniCPM5-1B-SFT on cognitive behavioral reflections using QLoRA."""
     import torch
     from datasets import Dataset  # type: ignore
@@ -151,14 +150,19 @@ def train_lora():
     model.save_pretrained("/checkpoints/inner-space-final")
     tokenizer.save_pretrained("/checkpoints/inner-space-final")
 
+    # Resolve HF Token and Target Repo ID
+    if not hf_token:
+        hf_token = os.environ.get("HF_TOKEN")
+    if not repo_id:
+        repo_id = "build-small-hackathon/inner-space-1b-sft-cbt"
+
     # If HF token is available, push to hub
-    hf_token = os.environ.get("HF_TOKEN")
     if hf_token:
-        print("Pushing fine-tuned adapter to Hugging Face Hub...")
-        model.push_to_hub(
-            "build-small-hackathon/inner-space-1b-sft-cbt", token=hf_token
+        print(
+            f"Pushing fine-tuned adapter to Hugging Face Hub repository: {repo_id}..."
         )
-        tokenizer.push_to_hub(
-            "build-small-hackathon/inner-space-1b-sft-cbt", token=hf_token
-        )
+        model.push_to_hub(repo_id, token=hf_token)
+        tokenizer.push_to_hub(repo_id, token=hf_token)
         print("Pushed successfully!")
+    else:
+        print("HF_TOKEN not set or provided. Skipping publishing step.")

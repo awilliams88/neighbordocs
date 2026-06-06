@@ -14,6 +14,6 @@ GITHUB_URL = "https://github.com/awilliams88/neighbordocs"
 SPACE_URL = "https://huggingface.co/spaces/build-small-hackathon/neighbordocs"
 
 # Targeted OpenBMB model configuration
-MODEL_ID = "openbmb/MiniCPM-1B-sft-bf16"
+MODEL_ID = "openbmb/MiniCPM5-1B-SFT"
 SPONSOR_NAME = "OpenBMB"
 PARAMETER_COUNT = "1.2B"

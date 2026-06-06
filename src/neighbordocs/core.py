@@ -8,6 +8,7 @@ from pypdf import PdfReader
 
 from .config import (
     MODEL_ID,
+    PARAMETER_COUNT,
     PDF_PAGE_LIMIT,
     PREVIEW_LIMIT,
     SUPPORTED_SUFFIXES,
@@ -59,7 +60,7 @@ def analyze_document(
     model_path = "\n".join(
         [
             f"Primary model: {MODEL_ID}",
-            "Parameters: 1.5B",
+            f"Parameters: {PARAMETER_COUNT}",
             "Execution flow: local GPU (on ZeroGPU Space) with hybrid serverless fallback",
             "---",
             log_details,

@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 import torch
 
-model_id = "Qwen/Qwen2.5-1.5B-Instruct"
+model_id = "openbmb/MiniCPM-1B-sft-bf16"
 _tokenizer = None
 _model = None
 
@@ -13,15 +13,23 @@ _model = None
 def get_model_and_tokenizer():
     global _model, _tokenizer
     if _model is None:
+        import transformers.utils
+        import transformers.utils.import_utils
+
+        # Monkey patch to fix compatibility of OpenBMB custom code under transformers v5+
+        transformers.utils.is_torch_fx_available = lambda: True
+        transformers.utils.import_utils.is_torch_fx_available = lambda: True
+
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         print(f"Loading tokenizer for {model_id}...")
-        _tokenizer = AutoTokenizer.from_pretrained(model_id)
-        print(f"Loading model {model_id} on CPU...")
+        _tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+        print(f"Loading model {model_id}...")
         _model = AutoModelForCausalLM.from_pretrained(
             model_id,
             torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
             low_cpu_mem_usage=True,
+            trust_remote_code=True,
         )
     return _model, _tokenizer
 
@@ -101,14 +109,12 @@ def run_model_inference(prompt: str, use_zerogpu: bool = False) -> tuple[str, st
 
     # Serverless API Fallback
     log_lines.append(
-        "Initiating Hugging Face Serverless Inference API (Qwen/Qwen2.5-1.5B-Instruct)..."
+        f"Initiating Hugging Face Serverless Inference API ({model_id})..."
     )
     try:
         from huggingface_hub import InferenceClient
 
-        client = InferenceClient(
-            "Qwen/Qwen2.5-1.5B-Instruct", token=os.environ.get("HF_TOKEN")
-        )
+        client = InferenceClient(model_id, token=os.environ.get("HF_TOKEN"))
         messages = [{"role": "user", "content": prompt}]
         completion = client.chat_completion(messages=messages, max_tokens=512)
         response = completion.choices[0].message.content

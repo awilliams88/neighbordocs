@@ -10,6 +10,6 @@ PREVIEW_LIMIT = 2000
 GITHUB_URL = "https://github.com/awilliams88/neighbordocs"
 SPACE_URL = "https://huggingface.co/spaces/build-small-hackathon/neighbordocs"
 
-MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
-SPONSOR_NAME = "Qwen / Alibaba Cloud"
-PARAMETER_COUNT = "1.5B"
+MODEL_ID = "openbmb/MiniCPM-1B-sft-bf16"
+SPONSOR_NAME = "OpenBMB"
+PARAMETER_COUNT = "1.2B"

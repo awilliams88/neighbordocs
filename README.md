@@ -42,29 +42,20 @@ without needing a large model.
 Award surfaces:
 
 - Backyard AI: direct real-world usefulness.
-- NVIDIA / document intelligence: planned parser and document extraction path.
-- Tiny Titan: planned small-model summarization and checklist generation path.
+- OpenBMB: utilizing OpenBMB MiniCPM text model to target the $10,000 OpenBMB cash prize track.
+- Tiny Titan: using a genuinely tiny model (1.2B parameters, well below the 4B parameter cap).
 - Best Demo: clear before/after document workflow.
 - OpenAI / Codex: built and maintained with Codex; GitHub history is preserved.
 
-## Models and planned integrations
+## Models and integrations
 
 | Model or tool | Role | Status | Parameter count |
 | --- | --- | --- | --- |
 | `pypdf` | Basic PDF text extraction | Active | Not a model |
-| `nvidia/NVIDIA-Nemotron-Parse-v1.1` | Layout-aware PDF/PPT extraction | Recommended path | <1B |
-| Small text reasoner | Summary, obligations, deadlines, next actions | Planned | <=4B target |
-| `openbmb/MiniCPM-V-4.6` | Scanned-image/document understanding | Candidate | 1B class |
-| Cohere Tiny Aya family | Translation and local-language explanation | Candidate | 3.35B |
+| `openbmb/MiniCPM-1B-sft-bf16` | Summary, obligations, deadlines, next actions | Active | 1.2B |
 
-The final model list will stay within the hackathon rule that every model must
-be under 32B total parameters. The first planned sponsor path is NVIDIA
-Nemotron Parse because document extraction is central to the product.
+The model list stays within the hackathon rule that every model must be under 32B total parameters. We focus on a single, high-quality, lightweight sponsor model to maximize performance and target OpenBMB cash prizes.
 
-The hackathon transcript allows combining multiple models in one project. For
-NeighborDocs, that means we can combine a document parser, a tiny text reasoner,
-and an optional vision or multilingual model as long as each model remains under
-32B total parameters.
 
 ## Runtime and ZeroGPU plan
 
@@ -142,16 +133,14 @@ The Hugging Face Space is published under the Build Small Hackathon org:
 
 - Hugging Face Space: created.
 - GitHub repo: [awilliams88/neighbordocs](https://github.com/awilliams88/neighbordocs).
-- ZeroGPU hook: wired, pending final model-backed implementation.
+- ZeroGPU hook: fully wired with OpenBMB model support.
 - Demo video: pending.
 - Social post: pending.
-- Final model list and parameter counts: pending once model integrations are
-  selected.
+- Final model list and parameter counts: `openbmb/MiniCPM-1B-sft-bf16` (1.2B).
 
 ## Current limitations
 
 - OCR for scanned images is not implemented yet.
-- The summary is currently a rule-based MVP response, not a final model output.
-- ZeroGPU is wired as an integration path, but the public Space should remain on
-  CPU until the final GPU-backed model is connected.
+- The app uses the OpenBMB model on GPU (via ZeroGPU) with a rule-based CPU parser fallback when GPU/API token is unavailable.
 - Multilingual output is planned but not implemented yet.
+

@@ -14,6 +14,7 @@ setup() {
   source .venv/bin/activate
   python -m pip install --upgrade pip
   pip install -r requirements.txt
+  pip install -r requirements-dev.txt
 }
 
 ensure_venv() {
@@ -46,4 +47,3 @@ case "$TARGET" in
     python app.py
     ;;
 esac
-

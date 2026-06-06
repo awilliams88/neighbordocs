@@ -42,7 +42,9 @@ def summarize_document(file_path: str | None, notes: str) -> tuple[str, str]:
 with gr.Blocks(title="NeighborDocs") as demo:
     gr.Markdown("# NeighborDocs\nA small document helper for everyday paperwork.")
     with gr.Row():
-        file_input = gr.File(label="Upload a PDF, TXT, or MD file", file_types=[".pdf", ".txt", ".md"])
+        file_input = gr.File(
+            label="Upload a PDF, TXT, or MD file", file_types=[".pdf", ".txt", ".md"]
+        )
         notes_input = gr.Textbox(
             label="Optional notes",
             lines=8,
@@ -61,4 +63,3 @@ with gr.Blocks(title="NeighborDocs") as demo:
 
 if __name__ == "__main__":
     demo.launch()
-

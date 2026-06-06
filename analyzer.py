@@ -1,19 +1,16 @@
-"""
-Module responsible for orchestrating the overall journal entry analysis.
-Brings together inference, file extraction, response parsing, and heuristic fallbacks.
-"""
+# Module responsible for orchestrating the overall journal entry analysis.
+# Brings together inference, file extraction, response parsing, and fallback flows.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
-# Dynamic import fallback for ZeroGPU runtime environment compatibility
 try:
-    import spaces  # type: ignore
+    import spaces
 except ImportError:
-
+    # Dummy decorator used when spaces package is unavailable locally
     class _LocalSpacesFallback:
         @staticmethod
         def GPU(
@@ -27,7 +24,7 @@ except ImportError:
     spaces = _LocalSpacesFallback()
 
 from config import ENTRY_LIMIT, MODEL_ID, PARAMETER_COUNT
-from inference import run_model_inference, run_chat_inference
+from inference import run_chat_inference, run_model_inference
 from parser import extract_journal_text, parse_sections
 
 
@@ -125,6 +122,7 @@ def analyze_journal_ui(
 ) -> tuple[str, str, str, str, str, list[dict[str, str]], str]:
     """Gradio-compatible entry point decorated for Hugging Face ZeroGPU compatibility."""
     report = analyze_journal(file_path, raw_text)
+    # The last element returned updates the hidden journal_context state variable
     return (
         report.entry_text,
         report.model_path,
@@ -142,14 +140,7 @@ def chat_respond_ui(
     user_message: str,
     journal_context: str,
 ) -> tuple[list[dict[str, str]], str, str]:
-    """Gradio-compatible chat handler decorated for Hugging Face ZeroGPU compatibility.
-
-    Returns:
-        tuple containing:
-        - updated history list of dicts
-        - cleared user message textbox string ("")
-        - updated system logs string
-    """
+    """Gradio-compatible chat handler decorated for Hugging Face ZeroGPU compatibility."""
     updated_history = list(history) if history else []
     if not user_message.strip():
         return updated_history, "", "Empty user message. No inference run."

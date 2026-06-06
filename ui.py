@@ -1,7 +1,11 @@
+# Module responsible for creating and laying out the Gradio interface.
+# Connects UI input components to core logical workflows.
+
 from __future__ import annotations
 
-import gradio as gr
 from typing import Any
+import gradio as gr
+from gradio.themes import Soft
 
 from config import (
     APP_DESCRIPTION,
@@ -14,7 +18,7 @@ from core import analyze_journal_ui, chat_respond_ui
 
 def get_theme() -> Any:
     """Returns the custom soft theme configured for dark slate violet styling."""
-    theme = gr.themes.Soft(  # type: ignore
+    theme = Soft(
         primary_hue="violet",
         secondary_hue="slate",
         neutral_hue="slate",
@@ -114,7 +118,7 @@ def create_app() -> gr.Blocks:
                 elem_classes=["nd-log-box"],
             )
 
-        # Demo examples for one-click test runs
+        # Preloaded examples for one-click test runs
         gr.Examples(
             examples=[
                 [
@@ -123,7 +127,23 @@ def create_app() -> gr.Blocks:
                 ],
                 [
                     None,
-                    "Had an amazing weekend! Met up with an old high school friend. We talked for hours over coffee and reminsiced. I felt so connected and energized. Need to remember to reach out to people more often.",
+                    "I've been working 12-hour days all week. I feel completely exhausted, but if I take a break, my team will fall behind and it'll be my fault. I just need to push through, but I can barely think straight.",
+                ],
+                [
+                    None,
+                    "I got promoted to senior engineer, but I'm terrified. I only got it because they like me, not because I'm actually good at this. Soon they'll assign me a complex task, I'll fail, and everyone will realize I'm a fraud.",
+                ],
+                [
+                    None,
+                    "My best friend forgot my birthday. They didn't even text me. I thought we were close, but clearly they don't value our friendship as much as I do. I should just stop talking to them entirely.",
+                ],
+                [
+                    None,
+                    "I've had a headache for two days. I googled it and it says it could be a brain tumor. I'm terrified. I can't focus on anything else and I feel like my life is ending.",
+                ],
+                [
+                    None,
+                    "Had an amazing weekend! Met up with an old high school friend. We talked for hours over coffee and reminisced. I felt so connected and energized.",
                 ],
             ],
             inputs=[file_input, notes_input],

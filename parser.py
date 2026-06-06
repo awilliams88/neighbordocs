@@ -1,7 +1,5 @@
-"""
-Module responsible for diary text file parsing and model output parsing.
-Extracts raw text from inputs and parses structured response blocks.
-"""
+# Module responsible for diary text file parsing and model output parsing.
+# Extracts raw text from inputs and parses structured response blocks.
 
 from __future__ import annotations
 

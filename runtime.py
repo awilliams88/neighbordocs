@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+from pathlib import Path
 import asyncio.base_events as base_events
 from typing import Any
 
@@ -7,7 +9,7 @@ from typing import Any
 def patch_asyncio_cleanup_warning() -> None:
     """Patches asyncio EventLoop __del__ method to ignore harmless file descriptor cleanup warnings in notebook/interactive runs."""
     original_del = getattr(base_events.BaseEventLoop, "__del__", None)
-    if original_del is None or getattr(original_del, "_neighbordocs_patched", False):
+    if original_del is None or getattr(original_del, "_innerspace_patched", False):
         return
 
     def patched_del(self: Any) -> None:
@@ -17,15 +19,12 @@ def patch_asyncio_cleanup_warning() -> None:
             if str(exc) != "Invalid file descriptor: -1":
                 raise
 
-    patched_del._neighbordocs_patched = True  # type: ignore[attr-defined]
-    base_events.BaseEventLoop.__del__ = patched_del  # type: ignore[method-assign]
+    setattr(patched_del, "_innerspace_patched", True)
+    setattr(base_events.BaseEventLoop, "__del__", patched_del)
 
 
 def load_env() -> None:
     """Loads environment variables from .env if present in the current or parent directory."""
-    import os
-    from pathlib import Path
-
     for path in [Path(".env"), Path("../.env")]:
         if path.is_file():
             try:
@@ -35,7 +34,8 @@ def load_env() -> None:
                         if line and not line.startswith("#") and "=" in line:
                             k, v = line.split("=", 1)
                             os.environ.setdefault(k.strip(), v.strip().strip("'\""))
-                break  # Stop after loading the first found .env file
+                # Stop after loading the first found .env file
+                break
             except Exception:
                 pass
 

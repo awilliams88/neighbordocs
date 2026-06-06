@@ -1,7 +1,21 @@
 from __future__ import annotations
 
 import os
-import modal  # type: ignore
+import torch
+import modal
+from datasets import Dataset
+from peft import (
+    LoraConfig,
+    get_peft_model,
+    prepare_model_for_kbit_training,
+)
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+    TrainingArguments,
+)
+from trl import SFTTrainer
 
 # Define the Modal App
 app = modal.App("inner-space-tuner")
@@ -24,35 +38,21 @@ volume = modal.Volume.from_name("inner-space-checkpoints", create_if_missing=Tru
 MODEL_ID = "openbmb/MiniCPM5-1B-SFT"
 
 
+# Targets single A10G GPU for cost-effective execution
+# Two hours timeout
 @app.function(
     image=image,
-    gpu="A10G",  # Targets single A10G GPU for cost-effective execution
-    timeout=7200,  # 2 hours timeout
+    gpu="A10G",
+    timeout=7200,
     volumes={"/checkpoints": volume},
 )
 def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     """Fine-tunes openbmb/MiniCPM5-1B-SFT on cognitive behavioral reflections using QLoRA."""
-    import torch
-    from datasets import Dataset  # type: ignore
-    from peft import (  # type: ignore
-        LoraConfig,
-        get_peft_model,
-        prepare_model_for_kbit_training,
-    )
-    from transformers import (
-        AutoModelForCausalLM,
-        AutoTokenizer,
-        BitsAndBytesConfig,
-        TrainingArguments,
-    )
-    from trl import SFTTrainer  # type: ignore
-
     print(f"Loading tokenizer for {MODEL_ID}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     tokenizer.pad_token = tokenizer.eos_token
 
-    # Step 1: Prepare a synthetic CBT/Mindfulness journal dataset
-    # In a real-world scenario, you would load this from Hugging Face Hub (e.g., load_dataset("CBT-Reflections"))
+    # Prepare a synthetic CBT/Mindfulness journal dataset
     print("Preparing training dataset...")
     raw_data = [
         {
@@ -108,7 +108,7 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
 
     dataset = Dataset.from_list(formatted_dataset)
 
-    # Step 2: Configure 4-bit QLoRA quantization for resource efficiency
+    # Configure 4-bit QLoRA quantization for resource efficiency
     print("Configuring QLoRA...")
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -128,7 +128,7 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     # Prepare model for PEFT training
     model = prepare_model_for_kbit_training(model)
 
-    # Step 3: Configure LoRA Adapter
+    # Configure LoRA Adapter
     peft_config = LoraConfig(
         r=8,
         lora_alpha=16,
@@ -140,7 +140,7 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-    # Step 4: Configure Training Arguments
+    # Configure Training Arguments
     training_args = TrainingArguments(
         output_dir="/checkpoints/inner-space-lora",
         per_device_train_batch_size=1,
@@ -157,7 +157,7 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
         report_to="none",
     )
 
-    # Step 5: Start Training
+    # Start Training
     print("Starting fine-tuning job on Modal...")
     trainer = SFTTrainer(
         model=model,
@@ -169,7 +169,7 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     trainer.train()
     print("Fine-tuning completed successfully!")
 
-    # Step 6: Save and push adapter to Hugging Face Hub (optional)
+    # Save and push adapter to Hugging Face Hub
     print("Saving fine-tuned adapter...")
     model.save_pretrained("/checkpoints/inner-space-final")
     tokenizer.save_pretrained("/checkpoints/inner-space-final")

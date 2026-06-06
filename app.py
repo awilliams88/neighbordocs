@@ -1,18 +1,18 @@
+# Entry point for the InnerSpace Gradio application.
+# Configures environment variables, patches warnings, and launches the interface.
+
 from __future__ import annotations
 
 import os
+from runtime import patch_asyncio_cleanup_warning
+from styles import CUSTOM_CSS
+from ui import create_app, get_theme
 
 # Disable Gradio Server-Side Rendering
 os.environ.setdefault("GRADIO_SSR_MODE", "false")
 
 # Patch asyncio to ignore minor event loop warnings on teardown
-from runtime import patch_asyncio_cleanup_warning  # noqa: E402
-
 patch_asyncio_cleanup_warning()
-
-# Import UI components and CSS styling
-from styles import CUSTOM_CSS  # noqa: E402
-from ui import create_app, get_theme  # noqa: E402
 
 # Build Gradio app block
 demo = create_app()

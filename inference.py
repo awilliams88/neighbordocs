@@ -1,17 +1,18 @@
-"""
-Module responsible for model loading and text generation.
-Handles local GPU/CPU execution and fallback to Hugging Face Serverless Inference API.
-"""
+# Module responsible for model loading and text generation.
+# Handles local GPU/CPU execution and fallback to Hugging Face Serverless Inference API.
 
 from __future__ import annotations
 
 import os
+import traceback
 from typing import Any
 import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from huggingface_hub import InferenceClient
 
 from config import MODEL_ID
 
-# Caches for the model and tokenizer to prevent re-loading on every call
+# Cache model and tokenizer to prevent reloading on subsequent runs
 _model: Any = None
 _tokenizer: Any = None
 
@@ -20,8 +21,6 @@ def get_model_and_tokenizer() -> tuple[Any, Any]:
     """Loads and caches the Hugging Face model and tokenizer lazily."""
     global _model, _tokenizer
     if _model is None:
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-
         print(f"Loading tokenizer for {MODEL_ID}...")
         _tokenizer = AutoTokenizer.from_pretrained(
             MODEL_ID,
@@ -83,8 +82,6 @@ def run_model_inference(prompt: str) -> tuple[str, str]:
         return response, "\n".join(log_lines)
 
     except Exception as e:
-        import traceback
-
         traceback.print_exc()
         log_lines.append(
             f"Local model execution failed: {e}. Falling back to serverless API..."
@@ -95,8 +92,6 @@ def run_model_inference(prompt: str) -> tuple[str, str]:
         f"Initiating Hugging Face Serverless Inference API ({MODEL_ID})..."
     )
     try:
-        from huggingface_hub import InferenceClient
-
         client = InferenceClient(MODEL_ID, token=os.environ.get("HF_TOKEN"))
         messages = [{"role": "user", "content": prompt}]
         completion = client.chat_completion(messages=messages, max_tokens=512)
@@ -151,8 +146,6 @@ def run_chat_inference(
         return response, "\n".join(log_lines)
 
     except Exception as e:
-        import traceback
-
         traceback.print_exc()
         log_lines.append(
             f"Local chat execution failed: {e}. Falling back to serverless API..."
@@ -162,8 +155,6 @@ def run_chat_inference(
         f"Initiating Hugging Face Serverless Inference API for chat ({MODEL_ID})..."
     )
     try:
-        from huggingface_hub import InferenceClient
-
         client = InferenceClient(MODEL_ID, token=os.environ.get("HF_TOKEN"))
         messages = [{"role": "system", "content": system_prompt}] + history
         completion = client.chat_completion(messages=messages, max_tokens=256)

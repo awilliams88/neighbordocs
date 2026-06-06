@@ -66,13 +66,20 @@ def get_model_and_tokenizer() -> tuple[Any, Any]:
         transformers.utils.is_torch_fx_available = lambda: True  # type: ignore
         transformers.utils.import_utils.is_torch_fx_available = lambda: True  # type: ignore
 
+        import logging
         import warnings
 
-        # Ignore transformers v4.50+ GenerationMixin inheritance warning for third-party OpenBMB code
+        # Ignore transformers v4.50+ GenerationMixin inheritance warning (both standard warnings and loggers)
         warnings.filterwarnings(
             "ignore",
             message=".*GenerationMixin.*",
         )
+
+        class GenerationMixinFilter(logging.Filter):
+            def filter(self, record: logging.LogRecord) -> bool:
+                return "GenerationMixin" not in record.getMessage()
+
+        logging.getLogger("transformers").addFilter(GenerationMixinFilter())
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
 

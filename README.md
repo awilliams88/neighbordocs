@@ -17,7 +17,7 @@ NeighborDocs is a practical document helper for everyday paperwork: bills,
 school notices, receipts, forms, reports, and other documents that people often
 need to understand quickly.
 
-GitHub repo: [awilliams88/build-small-neighbordocs](https://github.com/awilliams88/build-small-neighbordocs)
+GitHub repo: [awilliams88/neighbordocs](https://github.com/awilliams88/neighbordocs)
 
 ## What it does
 
@@ -104,7 +104,7 @@ The Hugging Face Space is published under the Build Small Hackathon org:
 ## Submission checklist
 
 - Hugging Face Space: created.
-- GitHub repo: planned at `awilliams88/build-small-neighbordocs`.
+- GitHub repo: [awilliams88/neighbordocs](https://github.com/awilliams88/neighbordocs).
 - Demo video: pending.
 - Social post: pending.
 - Final model list and parameter counts: pending once model integrations are

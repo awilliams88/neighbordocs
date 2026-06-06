@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,6 +20,7 @@ from .config import (
 class DocumentReport:
     preview: str
     model_path: str
+    key_details: str
     summary: str
     checklist: str
 
@@ -51,12 +53,14 @@ def analyze_document(
     model_choice = get_model_choice(model_label)
 
     model_path = _build_model_path(model_choice)
+    key_details = _build_key_details(text)
     summary = _build_summary(text, user_context, model_choice)
     checklist = _build_checklist(text, user_context, model_choice)
 
     return DocumentReport(
         preview=preview,
         model_path=model_path,
+        key_details=key_details,
         summary=summary,
         checklist=checklist,
     )
@@ -103,6 +107,39 @@ def _build_summary(text: str, notes: str, model_choice: dict[str, str]) -> str:
     return "\n".join(f"- {bullet}" for bullet in bullets)
 
 
+def _build_key_details(text: str) -> str:
+    if not text or text == "No file uploaded.":
+        return "- No document details found yet."
+
+    dates = _extract_unique(
+        [
+            r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}\b",
+            r"\b\d{1,2}/\d{1,2}/\d{2,4}\b",
+            r"\b\d{4}-\d{2}-\d{2}\b",
+        ],
+        text,
+    )
+    money = _extract_unique([r"\$\s?\d+(?:,\d{3})*(?:\.\d{2})?"], text)
+    document_type = _guess_document_type(text)
+
+    lines = [f"- Likely document type: {document_type}"]
+    lines.append(f"- Dates found: {', '.join(dates[:5]) if dates else 'none found'}")
+    lines.append(f"- Amounts found: {', '.join(money[:5]) if money else 'none found'}")
+
+    if "due" in text.lower():
+        lines.append(
+            "- Attention: the document appears to mention a due date or deadline."
+        )
+    if "late fee" in text.lower():
+        lines.append("- Attention: the document appears to mention a late fee.")
+    if "permission" in text.lower():
+        lines.append(
+            "- Attention: the document appears to require permission or approval."
+        )
+
+    return "\n".join(lines)
+
+
 def _build_checklist(text: str, notes: str, model_choice: dict[str, str]) -> str:
     if not text or text == "No file uploaded.":
         return "- Upload a PDF, TXT, or MD file."
@@ -120,3 +157,23 @@ def _build_checklist(text: str, notes: str, model_choice: dict[str, str]) -> str
         )
 
     return "\n".join(f"- {item}" for item in items)
+
+
+def _extract_unique(patterns: list[str], text: str) -> list[str]:
+    values: list[str] = []
+    for pattern in patterns:
+        values.extend(match.group(0).strip() for match in re.finditer(pattern, text))
+    return list(dict.fromkeys(values))
+
+
+def _guess_document_type(text: str) -> str:
+    lowered = text.lower()
+    if any(word in lowered for word in ["amount due", "balance", "late fee", "bill"]):
+        return "bill or payment notice"
+    if any(word in lowered for word in ["permission slip", "field trip", "school"]):
+        return "school or family notice"
+    if any(word in lowered for word in ["receipt", "invoice", "statement"]):
+        return "receipt, invoice, or statement"
+    if any(word in lowered for word in ["signature", "application", "form"]):
+        return "form or application"
+    return "general document"

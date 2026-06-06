@@ -43,8 +43,10 @@ def create_app() -> gr.Blocks:
             model_output = gr.Textbox(label="Selected model path", lines=8)
 
         with gr.Row():
-            summary_output = gr.Textbox(label="Plain-English summary", lines=12)
-            checklist_output = gr.Textbox(label="Next-action checklist", lines=12)
+            key_details_output = gr.Textbox(label="Key details", lines=10)
+            checklist_output = gr.Textbox(label="Next-action checklist", lines=10)
+
+        summary_output = gr.Textbox(label="Plain-English summary", lines=10)
 
         gr.Examples(
             examples=[
@@ -68,6 +70,7 @@ def create_app() -> gr.Blocks:
             outputs=[
                 extracted_output,
                 model_output,
+                key_details_output,
                 summary_output,
                 checklist_output,
             ],
@@ -80,6 +83,12 @@ def _analyze_for_ui(
     file_path: str | None,
     notes: str,
     model_label: str | None,
-) -> tuple[str, str, str, str]:
+) -> tuple[str, str, str, str, str]:
     report = analyze_document(file_path, notes, model_label)
-    return report.preview, report.model_path, report.summary, report.checklist
+    return (
+        report.preview,
+        report.model_path,
+        report.key_details,
+        report.summary,
+        report.checklist,
+    )

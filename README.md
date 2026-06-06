@@ -25,6 +25,7 @@ GitHub repo: [awilliams88/neighbordocs](https://github.com/awilliams88/neighbord
 - Extracts readable text from the first pages of a PDF.
 - Lets the user choose a sponsor-aligned model strategy.
 - Shows an extracted-text preview.
+- Extracts visible dates, amounts, likely document type, and attention signals.
 - Produces a plain-English summary and next-step checklist.
 
 ## Hackathon fit
@@ -57,6 +58,11 @@ The final model list will stay within the hackathon rule that every model must
 be under 32B total parameters. The first planned sponsor path is NVIDIA
 Nemotron Parse because document extraction is central to the product.
 
+The hackathon transcript allows combining multiple models in one project. For
+NeighborDocs, that means we can combine a document parser, a tiny text reasoner,
+and an optional vision or multilingual model as long as each model remains under
+32B total parameters.
+
 ## Architecture
 
 ```text
@@ -65,6 +71,7 @@ Upload + notes
   -> sponsor model strategy selector
   -> PDF/text extraction
   -> extracted text preview
+  -> dates, amounts, document type, and attention signals
   -> model or rule-based document interpreter
   -> plain-English summary + next steps
 ```

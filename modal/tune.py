@@ -10,8 +10,7 @@ modal_any: Any = modal
 # Modal app groups the remote fine-tuning job.
 app = modal_any.App("inner-space-tuner")
 
-# Bake dataset.py into the image so it is importable at /root/dataset.py.
-# add_local_file() is the correct Modal 1.x API for embedding local files.
+# Custom container image with necessary libraries and local dataset code.
 image = (
     modal_any.Image.debian_slim()
     .pip_install(
@@ -74,7 +73,9 @@ def train_lora(
     # Tokenizer is loaded before formatting chat examples.
     print(f"Loading tokenizer for {MODEL_ID}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-    tokenizer.pad_token = tokenizer.eos_token
+    # Set pad_token_id directly to avoid modifying the special tokens registry,
+    # which would trigger a model config mismatch warning from transformers.
+    tokenizer.pad_token_id = tokenizer.eos_token_id
 
     # Synthetic examples capture reports and follow-up coaching turns.
     print("Preparing training dataset...")
@@ -116,11 +117,12 @@ def train_lora(
 
     # Load the base model in 4-bit mode for adapter training.
     print(f"Loading quantized base model {MODEL_ID}...")
+    # dtype is intentionally omitted — bfloat16 compute dtype is already
+    # declared in BitsAndBytesConfig; passing it again here conflicts with quantization.
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
         quantization_config=bnb_config,
         device_map="auto",
-        dtype=torch.bfloat16,
     )
 
     # Prepare quantized layers for PEFT adapter updates.

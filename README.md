@@ -91,11 +91,7 @@ User Input (text or file)
 
 ---
 
-## Example Entries
 
-The [`examples/`](examples/) directory contains ready-to-load journal entries covering common scenarios. Use the **Load Example** buttons in the UI to try them directly.
-
----
 
 ## Local Development
 

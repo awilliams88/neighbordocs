@@ -2,6 +2,7 @@
 __pycache__/
 .pytest_cache/
 .ruff_cache/
+.pip-cache/
 .mypy_cache/
 .DS_Store
 *.pyc
@@ -16,4 +17,3 @@ build/
 *.pt
 *.safetensors
 *.gguf
-

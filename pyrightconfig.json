@@ -1,3 +1,4 @@
 {
-  "reportMissingImports": "none"
+  "reportMissingImports": "none",
+  "reportFunctionMemberAccess": "none"
 }

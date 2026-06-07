@@ -7,15 +7,17 @@ sdk: gradio
 sdk_version: 6.16.0
 app_file: app.py
 python_version: "3.12"
-short_description: Privacy-first offline cognitive journal & reflection coach
+short_description: Local-first cognitive journal & reflection coach
 pinned: false
 ---
 
 # InnerSpace
 
-**InnerSpace** is a private, offline-first cognitive journal and AI reflection companion. It runs a fine-tuned 1.2B parameter language model directly on the device — no data ever leaves the session.
+**InnerSpace** is a private, local-first cognitive journal and AI reflection companion. It runs a fine-tuned 1.2B parameter language model inside the Hugging Face Space runtime. There is no serverless inference fallback, so journal text is not sent to an external inference API.
 
 The model analyzes journal entries through the lens of **Cognitive Behavioral Therapy (CBT)**: surfacing emotions, identifying affected life areas, flagging cognitive distortions, and responding with a gentle reflective question to help the writer think more clearly.
+
+InnerSpace is a reflective journaling tool, not medical advice, diagnosis, crisis counseling, or a replacement for a licensed mental-health professional. If someone may be in immediate danger or crisis, they should contact local emergency services or a crisis hotline.
 
 **Live Space**: [build-small-hackathon/innerspace](https://huggingface.co/spaces/build-small-hackathon/innerspace)
 **Source Code**: [awilliams88/innerspace](https://github.com/awilliams88/innerspace)
@@ -25,13 +27,15 @@ The model analyzes journal entries through the lens of **Cognitive Behavioral Th
 
 ## What It Does
 
-Write or upload a journal entry (`.txt` or `.md`). InnerSpace will return a structured reflection in four parts:
+Write or upload a journal entry (`.txt` or `.md`) and set your current distress level. InnerSpace will return a structured reflection in six parts:
 
 | Section | Description |
 |---|---|
 | **Emotions** | Dominant emotional states present in the entry |
 | **Life Areas** | Affected domains — career, relationships, health, etc. |
 | **Cognitive Distortions** | Patterns like *Catastrophizing*, *Mind Reading*, or *All-or-Nothing Thinking* |
+| **Balanced Reframe** | A grounded alternative interpretation that does not dismiss the writer's feelings |
+| **Tiny Next Step** | One realistic action the writer can try in the next 10 minutes |
 | **Reflection** | A gentle open-ended question to prompt deeper self-awareness |
 
 ---
@@ -41,14 +45,15 @@ Write or upload a journal entry (`.txt` or `.md`). InnerSpace will return a stru
 The inference engine is powered by a **QLoRA-adapted** version of [`openbmb/MiniCPM5-1B-SFT`](https://huggingface.co/openbmb/MiniCPM5-1B-SFT), trained specifically on CBT reflection patterns.
 
 **Why fine-tune instead of prompting?**
-The base model is general-purpose. Fine-tuning teaches it the exact four-section output structure (Emotions / Life Areas / Cognitive Distortions / Reflection) and CBT vocabulary — producing more consistent, therapeutically-grounded responses without relying on long system prompts.
+The base model is general-purpose. Fine-tuning teaches it the core CBT output structure and vocabulary — producing more consistent, therapeutically-grounded responses without relying on long system prompts. The current app extends that flow with a balanced reframe, a tiny next step, and distress-level context.
 
 **Training details:**
 - Method: QLoRA (4-bit NF4 quantization + LoRA adapters on attention layers)
 - Hardware: NVIDIA A10G GPU via [Modal.com](https://modal.com)
-- Dataset: 9 synthetic CBT journal entries covering career anxiety, relationship stress, health anxiety, and imposter syndrome
-- Steps: 50 (token accuracy improved from ~44% → ~85%)
-- Adapter size: 4.15 MB (only 0.19% of total parameters trained)
+- Dataset: 17 structured CBT journal entries plus 8 multi-turn follow-up coaching examples
+- Output format: six sections aligned with the app UI — emotions, life areas, cognitive distortions, balanced reframe, tiny next step, and reflection
+- Follow-up behavior: brief second-turn coaching for self-critical replies without hidden reasoning tags or business-style metrics
+- Steps: 220 with a rank-16 LoRA adapter and 1536-token examples
 
 The fine-tuned LoRA adapter is published at [`build-small-hackathon/inner-space-1b-sft-cbt`](https://huggingface.co/build-small-hackathon/inner-space-1b-sft-cbt) and is loaded automatically on top of the base model at Space startup.
 
@@ -66,11 +71,6 @@ User Input (text or file)
            │
            ▼
 ┌─────────────────────┐
-│    Core Facade      │  core.py — unified entry point
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
 │  Analyzer           │  analyzer.py — prompt construction & ZeroGPU dispatch
 └──────────┬──────────┘
            │
@@ -81,14 +81,13 @@ User Input (text or file)
 │ Engine  │  │  Engine  │  parser.py — file reading & section splitting
 └────┬────┘  └──────────┘
      │
-     ├── ZeroGPU (primary): base model + LoRA adapter via PeftModel
-     └── HF Serverless API (fallback): base model via InferenceClient
+     └── ZeroGPU / local runtime: base model + LoRA adapter via PeftModel
 ```
 
 **Inference priority:**
 1. **ZeroGPU** — loads `MiniCPM5-1B-SFT` in bfloat16 and applies the fine-tuned LoRA adapter via `PeftModel`. Runs on an NVIDIA A10G in the Space.
-2. **HF Serverless API** — transparent fallback if the GPU allocation fails or is unavailable.
-3. **Error** — if both paths fail, the UI returns a clear error message. No silent failures.
+2. **Privacy-first failure policy** — if local inference fails, the app returns a clear error instead of routing journal text to a serverless API.
+3. **Error** — if local execution fails, the UI returns a clear error message. No silent failures.
 
 ---
 
@@ -109,6 +108,7 @@ The [`examples/`](examples/) directory contains ready-to-load journal entries co
 ```bash
 ./run.sh app
 ```
+This launches through `app.py` so Gradio receives the custom theme and CSS.
 
 **Quality checks** (Ruff formatting, Ruff linting, Pyright type checking, Python compilation):
 ```bash
@@ -123,9 +123,9 @@ The [`examples/`](examples/) directory contains ready-to-load journal entries co
 |---|---|
 | `app.py` | Gradio launch entry point |
 | `config.py` | Central constants — model IDs, repo URLs, limits |
-| `core.py` | Public API facade |
 | `analyzer.py` | Journal analysis orchestrator with ZeroGPU decorator |
-| `inference.py` | Lazy model loader — applies LoRA adapter, handles fallback |
+| `inference.py` | Lazy model loader — applies LoRA adapter, runs local inference |
+| `MODEL_CARD.md` | Hugging Face model card for the LoRA adapter |
 | `parser.py` | File reader and section splitter |
 | `ui.py` | Gradio layout, components, and event hooks |
 | `styles.py` | Custom dark-violet CSS theme |
@@ -143,3 +143,13 @@ The [`examples/`](examples/) directory contains ready-to-load journal entries co
 - **UI**: Gradio 6 with custom CSS
 - **Hosting**: Hugging Face Spaces (ZeroGPU)
 - **Sponsor**: [OpenBMB](https://github.com/OpenBMB) — MiniCPM model family
+
+---
+
+## Submission Status
+
+- Demo video: pending
+- Social post: pending
+- Primary track: Backyard AI
+- Sponsor alignment: OpenBMB, OpenAI/Codex-authored development
+- Target merit badges: Well-Tuned, Off-Brand, Tiny Titan

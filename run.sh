@@ -1,30 +1,33 @@
 #!/usr/bin/env bash
-# Script to setup, format, lint, typecheck, and run the Gradio app
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
 TARGET="${1:-app}"
+PYTHON=".venv/bin/python"
 
-# Helper function to create virtualenv and install dependencies
 setup() {
-  if [ ! -d ".venv" ]; then
+  # Create or repair the local Python environment.
+  if [ ! -x "$PYTHON" ]; then
     python3 -m venv .venv
   fi
-  # shellcheck disable=SC1091
-  source .venv/bin/activate
-  python -m pip install --disable-pip-version-check -r requirements.txt
+
+  # Keep pip cache inside the repo to avoid global cache permission warnings.
+  export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$ROOT_DIR/.pip-cache}"
+  mkdir -p "$PIP_CACHE_DIR"
+
+  # Update pip first so dependency installs use the latest resolver.
+  "$PYTHON" -m pip install --upgrade pip --retries 0 --timeout 5 --quiet
+  "$PYTHON" -m pip install --quiet -r requirements.txt
 }
 
-# Helper function to ensure virtualenv exists
 ensure_venv() {
-  if [ ! -d ".venv" ]; then
+  # Reuse setup when the local environment is missing or broken.
+  if [ ! -x "$PYTHON" ]; then
     echo "Run ./run.sh setup first."
     exit 1
   fi
-  # shellcheck disable=SC1091
-  source .venv/bin/activate
 }
 
 case "$TARGET" in
@@ -34,24 +37,25 @@ case "$TARGET" in
   verify)
     setup
     echo "=== Running Ruff Formatting Check ==="
-    python -m ruff format --check *.py
+    "$PYTHON" -m ruff format --check *.py
     echo "=== Running Ruff Linter ==="
-    python -m ruff check *.py
+    "$PYTHON" -m ruff check *.py
     echo "=== Running Pyright Type Checker ==="
-    python -m pyright *.py
+    "$PYTHON" -m pyright *.py
     echo "=== Compiling Python Files ==="
-    python -m compileall *.py
+    "$PYTHON" -m compileall *.py
     ;;
   format)
     setup
-    python -m ruff format *.py
+    "$PYTHON" -m ruff format *.py
     ;;
   lint)
     setup
-    python -m ruff check *.py
+    "$PYTHON" -m ruff check *.py
     ;;
   app|run|*)
     ensure_venv
-    python app.py
+    # Launch through app.py so Gradio receives theme and CSS.
+    "$PYTHON" -m gradio app.py
     ;;
 esac

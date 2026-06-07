@@ -1,35 +1,64 @@
-# Module responsible for model loading and text generation.
-# Handles local GPU/CPU execution and fallback to Hugging Face Serverless Inference API.
-
 from __future__ import annotations
 
 import os
-import traceback
+import re
 from typing import Any
 import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from huggingface_hub import InferenceClient
 
 from config import ADAPTER_REPO_ID, MODEL_ID
 
-# Cache model and tokenizer to prevent reloading on subsequent runs
+# Keep one model instance warm after the first request.
 _model: Any = None
 _tokenizer: Any = None
 
+# Reasoning-capable models sometimes emit hidden thinking tags.
+_THINK_BLOCK_PATTERN = re.compile(r"<think>.*?</think>", re.IGNORECASE | re.DOTALL)
+_THINK_START_PATTERN = re.compile(r"<think>.*", re.IGNORECASE | re.DOTALL)
 
-def get_model_and_tokenizer() -> tuple[Any, Any]:
+
+def clean_generated_text(text: str, max_sentences: int | None = None) -> str:
+    """Removes hidden reasoning and trims rambling generated text."""
+    # Prefer content after a closing reasoning tag if the model included one.
+    if "</think>" in text.lower():
+        text = re.split(r"</think>", text, flags=re.IGNORECASE, maxsplit=1)[-1]
+
+    # Remove complete or dangling reasoning blocks.
+    text = _THINK_BLOCK_PATTERN.sub("", text)
+    text = _THINK_START_PATTERN.sub("", text)
+
+    # Drop accidental chat-template continuations.
+    for marker in ("<|im_end|>", "<|im_start|>", "\nUser:", "\nAssistant:"):
+        if marker in text:
+            text = text.split(marker, 1)[0]
+
+    # Normalize horizontal whitespace, but preserve newlines.
+    text = re.sub(r"[ \t]+", " ", text)
+    text = "\n".join(line.strip() for line in text.splitlines())
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    if max_sentences is None or not text:
+        return text
+
+    # Keep coach replies compact for the visible chat panel.
+    sentences = re.findall(r"[^.!?]+[.!?]?", text)
+    compact = "".join(sentences[:max_sentences]).strip()
+    return compact or text
+
+
+def get_model_and_tokenizer(log_lines: list[str]) -> tuple[Any, Any]:
     """Loads and caches the Hugging Face model and tokenizer lazily."""
     global _model, _tokenizer
     if _model is None:
-        print(f"Loading tokenizer for {MODEL_ID}...")
+        # Load tokenizer before model so prompt formatting is ready.
+        log_lines.append(f"Loading tokenizer: {MODEL_ID}")
         _tokenizer = AutoTokenizer.from_pretrained(
             MODEL_ID,
             token=os.environ.get("HF_TOKEN"),
         )
 
-        print(f"Loading model {MODEL_ID}...")
-        # Select bfloat16 on CUDA devices, else float32 for CPU/MPS compatibility
+        # Use bfloat16 on CUDA and float32 elsewhere for compatibility.
+        log_lines.append(f"Loading model: {MODEL_ID}")
         dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
         _model = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
@@ -38,45 +67,47 @@ def get_model_and_tokenizer() -> tuple[Any, Any]:
             token=os.environ.get("HF_TOKEN"),
         )
 
-        # Apply the fine-tuned LoRA adapter on top of the base model
-        print(f"Loading LoRA adapter from {ADAPTER_REPO_ID}...")
+        # Apply the CBT adapter when it is available.
+        log_lines.append(f"Loading LoRA adapter: {ADAPTER_REPO_ID}")
         try:
             _model = PeftModel.from_pretrained(
                 _model,
                 ADAPTER_REPO_ID,
                 token=os.environ.get("HF_TOKEN"),
             )
-            print("LoRA adapter applied successfully.")
+            log_lines.append("LoRA adapter applied.")
         except Exception as adapter_error:
-            print(
+            log_lines.append(
                 f"Warning: Could not load adapter ({adapter_error}). Using base model."
             )
 
-        # Move model to CUDA GPU memory if available
+        # Move the loaded model to GPU memory when ZeroGPU is active.
         if torch.cuda.is_available():
-            print("Moving model to CUDA device...")
+            log_lines.append("Moving model to CUDA.")
             _model = _model.to("cuda")
 
     return _model, _tokenizer
 
 
 def run_model_inference(prompt: str) -> tuple[str, str]:
-    """Executes inference using local hardware first, falling back to Serverless API on failure."""
+    """Executes inference using local hardware in the app runtime."""
     log_lines: list[str] = []
     try:
+        # Reuse the cached local model for the journal analysis.
         log_lines.append("Initializing local model execution...")
-        model, tokenizer = get_model_and_tokenizer()
+        model, tokenizer = get_model_and_tokenizer(log_lines)
         device = str(model.device)
         log_lines.append(f"Running local model execution on device: {device}...")
 
-        # Format prompt according to the model's chat template structure
+        # Format the prompt with the model chat template.
         messages = [{"role": "user", "content": prompt}]
         text = tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
         model_inputs = tokenizer([text], return_tensors="pt").to(device)
 
-        print("Generating response...")
+        # Generate a structured CBT reflection.
+        log_lines.append("Generating reflection...")
         generated_ids = model.generate(
             **model_inputs,
             max_new_tokens=512,
@@ -85,7 +116,7 @@ def run_model_inference(prompt: str) -> tuple[str, str]:
             top_p=0.9,
         )
 
-        # Retrieve the generated assistant text block only (excluding the input prompt)
+        # Decode only the generated assistant tokens.
         generated_ids = [
             output_ids[len(input_ids) :]
             for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
@@ -93,32 +124,14 @@ def run_model_inference(prompt: str) -> tuple[str, str]:
         response: str = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[
             0
         ]
+        response = clean_generated_text(response)
         log_lines.append("Local model execution completed successfully.")
         return response, "\n".join(log_lines)
 
     except Exception as e:
-        traceback.print_exc()
-        log_lines.append(
-            f"Local model execution failed: {e}. Falling back to serverless API..."
-        )
-
-    # Fallback to serverless API if local run fails
-    log_lines.append(
-        f"Initiating Hugging Face Serverless Inference API ({MODEL_ID})..."
-    )
-    try:
-        client = InferenceClient(MODEL_ID, token=os.environ.get("HF_TOKEN"))
-        messages = [{"role": "user", "content": prompt}]
-        completion = client.chat_completion(messages=messages, max_tokens=512)
-        response = completion.choices[0].message.content or ""
-        log_lines.append("Serverless API execution completed successfully.")
-        return response, "\n".join(log_lines)
-
-    except Exception as e:
-        log_lines.append(f"Serverless API execution failed: {e}.")
-        log_lines.append(
-            "Inference failed completely. No heuristics fallback available."
-        )
+        # Keep private text local even when inference fails.
+        log_lines.append(f"Local model execution failed: {e}.")
+        log_lines.append("Inference stopped. No serverless fallback is configured.")
         return "", "\n".join(log_lines)
 
 
@@ -126,30 +139,34 @@ def run_chat_inference(
     history: list[dict[str, str]],
     system_prompt: str,
 ) -> tuple[str, str]:
-    """Executes stateful multi-turn chat generation using local hardware or serverless fallback."""
+    """Executes stateful multi-turn chat generation using local hardware."""
     log_lines: list[str] = []
     try:
+        # Reuse the cached local model for follow-up coaching.
         log_lines.append("Initializing local model for chat...")
-        model, tokenizer = get_model_and_tokenizer()
+        model, tokenizer = get_model_and_tokenizer(log_lines)
         device = str(model.device)
         log_lines.append(f"Running local chat model on device: {device}...")
 
-        # Format chat history according to the model's template
+        # Include the system prompt and visible chat history.
         messages = [{"role": "system", "content": system_prompt}] + history
         text = tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
         model_inputs = tokenizer([text], return_tensors="pt").to(device)
 
-        print("Generating chat response...")
+        # Keep chat replies shorter than the initial report.
+        log_lines.append("Generating chat response...")
         generated_ids = model.generate(
             **model_inputs,
-            max_new_tokens=256,
+            max_new_tokens=128,
             do_sample=True,
-            temperature=0.7,
-            top_p=0.9,
+            temperature=0.45,
+            top_p=0.85,
+            repetition_penalty=1.08,
         )
 
+        # Decode only the latest assistant response.
         generated_ids = [
             output_ids[len(input_ids) :]
             for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
@@ -157,30 +174,23 @@ def run_chat_inference(
         response: str = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[
             0
         ]
+        response = clean_generated_text(response, max_sentences=4)
+        if not response:
+            response = (
+                "That sounds like a painful thought to sit with. "
+                "Can we look at one concrete piece of evidence for and against it?"
+            )
         log_lines.append("Local chat generation completed successfully.")
         return response, "\n".join(log_lines)
 
     except Exception as e:
-        traceback.print_exc()
+        # Preserve privacy by failing locally instead of routing to an API.
+        log_lines.append(f"Local chat execution failed: {e}.")
         log_lines.append(
-            f"Local chat execution failed: {e}. Falling back to serverless API..."
+            "Chat inference stopped. No serverless fallback is configured."
         )
-
-    log_lines.append(
-        f"Initiating Hugging Face Serverless Inference API for chat ({MODEL_ID})..."
-    )
-    try:
-        client = InferenceClient(MODEL_ID, token=os.environ.get("HF_TOKEN"))
-        messages = [{"role": "system", "content": system_prompt}] + history
-        completion = client.chat_completion(messages=messages, max_tokens=256)
-        response = completion.choices[0].message.content or ""
-        log_lines.append("Serverless API chat execution completed successfully.")
-        return response, "\n".join(log_lines)
-
-    except Exception as e:
-        log_lines.append(f"Serverless API execution failed: {e}.")
         error_msg = (
-            "I'm sorry, I am currently unable to connect to my AI inference engine. "
-            "Please check your Hugging Face API token or network connection."
+            "I'm sorry, local model execution is currently unavailable. "
+            "Please try again after the Space finishes loading the model."
         )
         return error_msg, "\n".join(log_lines)

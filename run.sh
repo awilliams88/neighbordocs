@@ -1,57 +1,51 @@
 #!/usr/bin/env bash
+# run.sh — local dev utility for InnerSpace.
+# Usage: ./run.sh [setup|verify|app]
 set -euo pipefail
 
+# Set ROOT_DIR
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$ROOT_DIR/.." && pwd)"
 cd "$ROOT_DIR"
 
-# Cleanup all cache folders across the entire repo on script exit.
-cleanup() {
-  echo "Cleaning cache folders..."
-  find "$REPO_ROOT" \
-    -not -path "$REPO_ROOT/.git/*" \
-    -not -path "$ROOT_DIR/.venv/*" \
-    \( -type d -name "__pycache__" -o -type d -name ".ruff_cache" \) \
-    -exec rm -rf {} + 2>/dev/null || true
-  echo "Cache cleaned."
-}
-trap cleanup EXIT
-
-TARGET="${1:-app}"
+# Set PYTHON and TARGET
 PYTHON=".venv/bin/python"
+TARGET="${1:-app}"
 
+# ---------------------------------------------------------------------------
+# Functions
+# ---------------------------------------------------------------------------
+
+# Create the virtual environment and install dependencies.
 setup() {
-  # Create or repair the local Python environment
   if [ ! -x "$PYTHON" ]; then
-    echo "Creating Python virtual environment..."
+    echo "Creating virtual environment..."
     python3 -m venv .venv
   fi
-
-
-
-  echo "Upgrading pip..."
-  "$PYTHON" -m pip install --upgrade pip --retries 0 --timeout 5
-  
-  echo "Installing dependencies from requirements.txt..."
-  "$PYTHON" -m pip install -r requirements.txt
+  echo "Installing dependencies..."
+  "$PYTHON" -m pip install --quiet --upgrade pip
+  "$PYTHON" -m pip install --quiet -r requirements.txt
+  echo "Setup complete."
 }
 
+# Abort early if the virtual environment is missing.
 ensure_venv() {
-  # Reuse setup when the local environment is missing or broken.
   if [ ! -x "$PYTHON" ]; then
-    echo "Run ./run.sh setup first."
+    echo "Error: run ./run.sh setup first."
     exit 1
   fi
 }
 
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
 case "$TARGET" in
   setup)
     setup
     ;;
+
   verify)
-    if [ ! -x "$PYTHON" ]; then
-      setup
-    fi
+    # Auto-install if the environment is missing.
+    [ ! -x "$PYTHON" ] && setup
     echo "→ format"
     "$PYTHON" -m ruff format app.py env/*.py core/*.py ui/*.py modal/*.py
     echo "→ lint"
@@ -60,10 +54,24 @@ case "$TARGET" in
     "$PYTHON" -m pyright app.py env/*.py core/*.py ui/*.py modal/*.py
     echo "→ compile"
     "$PYTHON" -m compileall -q app.py env/ core/ ui/ modal/
+    echo "✓ All checks passed."
     ;;
-  app|run|*)
+
+  app | run | *)
     ensure_venv
-    # Launch through app.py so Gradio receives theme and CSS.
+    # Launch via gradio so the custom theme and CSS are applied correctly.
     "$PYTHON" -m gradio app.py
     ;;
 esac
+
+# ---------------------------------------------------------------------------
+# Cleanup — remove Python and linter cache dirs on exit.
+# ---------------------------------------------------------------------------
+cleanup() {
+  find "$ROOT_DIR" \
+    -not -path "$ROOT_DIR/.git/*" \
+    -not -path "$ROOT_DIR/.venv/*" \
+    \( -type d -name "__pycache__" -o -type d -name ".ruff_cache" \) \
+    -exec rm -rf {} + 2>/dev/null || true
+}
+trap cleanup EXIT

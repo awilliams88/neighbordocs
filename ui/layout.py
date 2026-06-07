@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from html import escape
 from typing import Any
 import gradio as gr
 from gradio.themes import Soft
@@ -17,6 +18,110 @@ from core.analyzer import (
     reset_reflection_ui,
 )
 
+# Examples to demonstrate the app
+EXAMPLE_CARDS = [
+    {
+        "title": "Launch-Day Spiral",
+        "distress": 8,
+        "text": "I demoed my hackathon app and the button froze right when everyone was watching. My face got hot, I joked awkwardly, and now I keep thinking the whole project looks amateur.",
+    },
+    {
+        "title": "Group Chat Ghost",
+        "distress": 6,
+        "text": "I posted a meme in the group chat and nobody reacted. Now I feel like I misread the vibe and everyone secretly thinks I am annoying.",
+    },
+    {
+        "title": "Side-Quest Overload",
+        "distress": 7,
+        "text": "I opened my todo list and somehow started reorganizing my desk, updating app icons, and reading docs. The main task is still untouched, so maybe I have zero discipline.",
+    },
+    {
+        "title": "Coffee Shop Fumble",
+        "distress": 4,
+        "text": "I dropped my coffee at a crowded cafe and everyone looked over. It was over in ten seconds, but my brain keeps replaying it like a public trial.",
+    },
+    {
+        "title": "Calendar Chaos",
+        "distress": 7,
+        "text": "I missed a meeting because I read the time zone wrong. My manager said it was okay, but I am convinced this proves I cannot be trusted with real responsibility.",
+    },
+    {
+        "title": "Creative Blank Screen",
+        "distress": 5,
+        "text": "I sat down to write something fun and produced one terrible sentence in forty minutes. Maybe I only like the idea of being creative and not the actual work.",
+    },
+    {
+        "title": "Fitness App Shame",
+        "distress": 6,
+        "text": "My fitness app congratulated me for a three-minute walk, and somehow that made me feel worse. Everyone else is doing real workouts while I am celebrating crumbs.",
+    },
+    {
+        "title": "Roommate Sink Saga",
+        "distress": 5,
+        "text": "The dishes are in the sink again, and I am rehearsing a dramatic speech in my head. If I say something, I will sound petty; if I do not, I will explode.",
+    },
+    {
+        "title": "Tiny Typo Doom",
+        "distress": 8,
+        "text": "I sent a project update with a typo in the headline. Nobody mentioned it, but I keep imagining everyone questioning whether I pay attention to details.",
+    },
+    {
+        "title": "Overcooked Dinner",
+        "distress": 3,
+        "text": "I tried making dinner for friends and burned the garlic immediately. They laughed kindly, but I felt embarrassed and wanted to order takeout and disappear.",
+    },
+    {
+        "title": "Unread Email Mountain",
+        "distress": 7,
+        "text": "My inbox has become a haunted forest. Every unread email feels like proof I am behind, irresponsible, and about to miss something important.",
+    },
+    {
+        "title": "Presentation Freeze",
+        "distress": 9,
+        "text": "I have a presentation tomorrow and I keep picturing myself forgetting everything. I know the slides, but my brain is acting like I am walking into disaster.",
+    },
+    {
+        "title": "Birthday Overthink",
+        "distress": 5,
+        "text": "A friend replied to my birthday invite with just 'maybe.' I know people are busy, but now I am wondering if nobody actually wants to come.",
+    },
+    {
+        "title": "Comparison Scroll",
+        "distress": 6,
+        "text": "I saw someone online ship a polished AI demo in one weekend. My app suddenly feels tiny, late, and kind of embarrassing.",
+    },
+    {
+        "title": "Budget Oops",
+        "distress": 6,
+        "text": "I ordered delivery twice this week even though I said I would save money. It feels like one small choice proves I cannot stick to anything.",
+    },
+    {
+        "title": "New Hobby Wobble",
+        "distress": 4,
+        "text": "I went to a beginner pottery class and made a bowl that looks like a tired pancake. Everyone else seemed naturally good, and I felt silly for trying.",
+    },
+    {
+        "title": "Reply-All Panic",
+        "distress": 8,
+        "text": "I accidentally replied-all with a question that was meant for one person. It was harmless, but my stomach dropped and now I want to avoid email forever.",
+    },
+    {
+        "title": "Weekend Reset Guilt",
+        "distress": 5,
+        "text": "I spent most of Sunday resting instead of being productive. Now it is evening and I feel like I wasted the whole weekend and fell behind my life.",
+    },
+    {
+        "title": "Tiny Win Suspicion",
+        "distress": 3,
+        "text": "Something actually went well today, and instead of enjoying it I keep waiting for the catch. Calm feels suspicious, like I missed a problem somewhere.",
+    },
+    {
+        "title": "Bug Fix Whiplash",
+        "distress": 8,
+        "text": "I fixed one bug in my app and two new weird things appeared. I am starting to think I am just moving the problem around instead of actually improving it.",
+    },
+]
+
 
 def get_theme() -> Any:
     """Returns the custom soft theme configured for dark slate violet styling."""
@@ -27,6 +132,24 @@ def get_theme() -> Any:
         neutral_hue="slate",
     )
     return theme
+
+
+def _example_card_html(title: str, distress: int, text: str) -> str:
+    """Builds a compact example preview with distress shown on the right."""
+    return (
+        '<div class="nd-example-copy">'
+        '<div class="nd-example-head">'
+        f"<span>{escape(title)}</span>"
+        f"<strong>{distress}/10</strong>"
+        "</div>"
+        f"<p>{escape(text)}</p>"
+        "</div>"
+    )
+
+
+def _select_example(text: str, distress: int) -> tuple[None, str, int]:
+    """Populates the journal form from an example card."""
+    return None, text, distress
 
 
 def create_app() -> gr.Blocks:
@@ -71,7 +194,7 @@ def create_app() -> gr.Blocks:
                     )
 
                 run_button = gr.Button(
-                    "Analyze Entry & Reflect",
+                    "Analyze Thoughts",
                     variant="primary",
                     elem_classes=["nd-btn"],
                 )
@@ -137,7 +260,40 @@ def create_app() -> gr.Blocks:
                     elem_classes=["nd-output-card", "nd-next-step-card"],
                 )
 
-        # Diagnostics stay collapsed unless the user wants execution details.
+        # Example cards populate the form without running inference automatically.
+        with gr.Column(elem_classes=["nd-examples-section"]):
+            gr.Markdown("## Try a Scenario 🎲")
+            for row_start in range(0, len(EXAMPLE_CARDS), 4):
+                with gr.Row(elem_classes=["nd-example-grid"]):
+                    for example in EXAMPLE_CARDS[row_start : row_start + 4]:
+                        with gr.Column(elem_classes=["nd-example-card"]):
+                            gr.HTML(
+                                _example_card_html(
+                                    str(example["title"]),
+                                    int(example["distress"]),
+                                    str(example["text"]),
+                                )
+                            )
+                            use_example = gr.Button(
+                                "Use example",
+                                size="sm",
+                                elem_classes=["nd-example-btn"],
+                            )
+                            use_example.click(
+                                fn=lambda text=str(example["text"]), distress=int(example["distress"]): (
+                                    _select_example(text, distress)
+                                ),
+                                inputs=[],
+                                outputs=[file_input, notes_input, distress_slider],
+                                queue=False,
+                            )
+
+        gr.Markdown(
+            f"[GitHub repo]({GITHUB_URL}) | [Hugging Face Space]({SPACE_URL})",
+            elem_id="nd-links",
+        )
+
+        # Diagnostics stay at the end and remain collapsed during normal use.
         with gr.Accordion("⚙️ Diagnostics & System Execution Logs", open=False):
             extracted_output = gr.Textbox(
                 label="Extracted Journal Text",
@@ -151,48 +307,6 @@ def create_app() -> gr.Blocks:
                 interactive=False,
                 elem_classes=["nd-log-box"],
             )
-
-        # Examples provide quick manual test cases.
-        gr.Examples(
-            examples=[
-                [
-                    None,
-                    8,
-                    "Today was a disaster. I made a typo in the main deployment script and broke the production build for 15 minutes. My manager was disappointed. I always screw up important things. I'm sure they are going to fire me next week.",
-                ],
-                [
-                    None,
-                    7,
-                    "I've been working 12-hour days all week. I feel completely exhausted, but if I take a break, my team will fall behind and it'll be my fault. I just need to push through, but I can barely think straight.",
-                ],
-                [
-                    None,
-                    8,
-                    "I got promoted to senior engineer, but I'm terrified. I only got it because they like me, not because I'm actually good at this. Soon they'll assign me a complex task, I'll fail, and everyone will realize I'm a fraud.",
-                ],
-                [
-                    None,
-                    6,
-                    "My best friend forgot my birthday. They didn't even text me. I thought we were close, but clearly they don't value our friendship as much as I do. I should just stop talking to them entirely.",
-                ],
-                [
-                    None,
-                    9,
-                    "I've had a headache for two days. I googled it and it says it could be a brain tumor. I'm terrified. I can't focus on anything else and I feel like my life is ending.",
-                ],
-                [
-                    None,
-                    2,
-                    "Had an amazing weekend! Met up with an old high school friend. We talked for hours over coffee and reminisced. I felt so connected and energized.",
-                ],
-            ],
-            inputs=[file_input, distress_slider, notes_input],
-        )
-
-        gr.Markdown(
-            f"[GitHub repo]({GITHUB_URL}) | [Hugging Face Space]({SPACE_URL})",
-            elem_id="nd-links",
-        )
 
         # Reset the coach before each new analysis run.
         reset_event = run_button.click(
@@ -231,6 +345,7 @@ def create_app() -> gr.Blocks:
             outputs=[chatbot, model_output],
         )
 
+        # Chat submission
         send_event = send_button.click(
             fn=add_user_message,
             inputs=[chatbot, chat_input],

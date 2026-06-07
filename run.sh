@@ -60,7 +60,7 @@ case "$TARGET" in
   app | run | *)
     ensure_venv
     # Launch via gradio so the custom theme and CSS are applied correctly.
-    "$PYTHON" -m gradio app.py
+    "$PYTHON" app.py
     ;;
 esac
 

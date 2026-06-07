@@ -54,28 +54,28 @@ body, .gradio-container {
     gap: 1.25rem !important;
     align-items: stretch !important;
 }
-.nd-input-panel, .nd-output-panel, .nd-analysis-section {
+.nd-input-panel, .nd-output-panel, .nd-analysis-section, .nd-examples-section {
     background-color: #151829 !important;
     border: 1px solid #2d2e4a !important;
     border-radius: 8px !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
     padding: 1.25rem !important;
 }
-.nd-analysis-section {
+.nd-analysis-section, .nd-examples-section {
     margin-top: 1.25rem !important;
 }
 .nd-output-panel {
     display: flex !important;
     flex-direction: column !important;
 }
-.nd-input-panel h3, .nd-output-panel h3, .nd-analysis-section h3 {
+.nd-input-panel h3, .nd-output-panel h3, .nd-analysis-section h3, .nd-examples-section h3 {
     margin: 0 0 0.8rem 0 !important;
     color: #e2e8f0 !important;
 }
 .nd-input-panel h3, .nd-output-panel h3 {
     font-size: 1.05rem !important;
 }
-.nd-analysis-section h3 {
+.nd-analysis-section h3, .nd-examples-section h3 {
     font-size: 1.20rem !important;
     border-bottom: 1px solid #2d2e4a;
     padding-bottom: 0.5rem;
@@ -220,6 +220,72 @@ body, .gradio-container {
     border: 1px solid rgba(245, 158, 11, 0.4) !important;
     background-color: rgba(245, 158, 11, 0.06) !important;
     color: #fde68a !important;
+}
+
+/* Example cards */
+.nd-example-grid {
+    gap: 1rem !important;
+    align-items: stretch !important;
+    margin-top: 0.85rem !important;
+}
+.nd-example-card {
+    min-width: 0 !important;
+    background-color: rgba(12, 14, 23, 0.86) !important;
+    border: 1px solid rgba(148, 163, 184, 0.22) !important;
+    border-radius: 8px !important;
+    padding: 0.85rem !important;
+    box-shadow: none !important;
+}
+.nd-example-card > .form {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+.nd-example-copy {
+    display: flex;
+    flex-direction: column;
+    min-height: 170px;
+    gap: 0.7rem;
+}
+.nd-example-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+.nd-example-head span {
+    color: #e2e8f0;
+    font-weight: 700;
+    line-height: 1.25;
+}
+.nd-example-head strong {
+    flex: 0 0 auto;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    background-color: rgba(245, 158, 11, 0.14);
+    color: #fde68a;
+    border-radius: 8px;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.82rem;
+    line-height: 1.2;
+}
+.nd-example-copy p {
+    color: #cbd5e1;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    margin: 0;
+}
+.nd-example-btn {
+    width: 100% !important;
+    min-height: 38px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(192, 132, 252, 0.35) !important;
+    background-color: rgba(124, 58, 237, 0.18) !important;
+    color: #e9d5ff !important;
+    font-weight: 600 !important;
+}
+.nd-example-btn:hover {
+    background-color: rgba(124, 58, 237, 0.28) !important;
 }
 
 /* Diagnostics */

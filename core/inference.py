@@ -12,6 +12,7 @@ from env.config import ADAPTER_REPO_ID, MODEL_ID
 # Keep one model instance warm after the first request.
 _model: Any = None
 _tokenizer: Any = None
+_adapter_applied = False
 
 # Reasoning-capable models sometimes emit hidden thinking tags.
 _THINK_BLOCK_PATTERN = re.compile(r"<think>.*?</think>", re.IGNORECASE | re.DOTALL)
@@ -20,13 +21,16 @@ _THINK_START_PATTERN = re.compile(r"<think>.*", re.IGNORECASE | re.DOTALL)
 
 def clean_generated_text(text: str, max_sentences: int | None = None) -> str:
     """Removes hidden reasoning and trims rambling generated text."""
-    # Prefer content after a closing reasoning tag if the model included one.
+    # Prefer visible content after a completed hidden-reasoning block.
     if "</think>" in text.lower():
         text = re.split(r"</think>", text, flags=re.IGNORECASE, maxsplit=1)[-1]
 
-    # Remove complete or dangling reasoning blocks.
+    # Remove complete or dangling hidden-reasoning blocks.
     text = _THINK_BLOCK_PATTERN.sub("", text)
     text = _THINK_START_PATTERN.sub("", text)
+    if "=== EMOTIONS ===" in text:
+        text = text.rsplit("=== EMOTIONS ===", 1)[1]
+        text = f"=== EMOTIONS ==={text}"
 
     # Drop accidental chat-template continuations.
     for marker in ("<|im_end|>", "<|im_start|>", "\nUser:", "\nAssistant:"):
@@ -46,9 +50,26 @@ def clean_generated_text(text: str, max_sentences: int | None = None) -> str:
     return compact or text
 
 
+def _format_chat_prompt(tokenizer: Any, messages: list[dict[str, str]]) -> str:
+    """Formats chat input while disabling model-side hidden reasoning when supported."""
+    try:
+        return tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=False,
+        )
+    except TypeError:
+        return tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+
+
 def get_model_and_tokenizer(log_lines: list[str]) -> tuple[Any, Any]:
     """Loads and caches the Hugging Face model and tokenizer lazily."""
-    global _model, _tokenizer
+    global _adapter_applied, _model, _tokenizer
     if _model is None:
         # Load tokenizer before model so prompt formatting is ready.
         log_lines.append(f"Loading tokenizer: {MODEL_ID}")
@@ -75,8 +96,10 @@ def get_model_and_tokenizer(log_lines: list[str]) -> tuple[Any, Any]:
                 ADAPTER_REPO_ID,
                 token=os.environ.get("HF_TOKEN"),
             )
+            _adapter_applied = True
             log_lines.append("LoRA adapter applied.")
         except Exception as adapter_error:
+            _adapter_applied = False
             log_lines.append(
                 f"Warning: Could not load adapter ({adapter_error}). Using base model."
             )
@@ -85,6 +108,10 @@ def get_model_and_tokenizer(log_lines: list[str]) -> tuple[Any, Any]:
         if torch.cuda.is_available():
             log_lines.append("Moving model to CUDA.")
             _model = _model.to("cuda")
+    else:
+        # Make cached-request diagnostics explicit without reloading weights.
+        adapter_status = "with LoRA adapter" if _adapter_applied else "without adapter"
+        log_lines.append(f"Using cached model {adapter_status}.")
 
     return _model, _tokenizer
 
@@ -101,9 +128,7 @@ def run_model_inference(prompt: str) -> tuple[str, str]:
 
         # Format the prompt with the model chat template.
         messages = [{"role": "user", "content": prompt}]
-        text = tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
+        text = _format_chat_prompt(tokenizer, messages)
         model_inputs = tokenizer([text], return_tensors="pt").to(device)
 
         # Generate a structured CBT reflection.
@@ -111,9 +136,7 @@ def run_model_inference(prompt: str) -> tuple[str, str]:
         generated_ids = model.generate(
             **model_inputs,
             max_new_tokens=512,
-            do_sample=True,
-            temperature=0.7,
-            top_p=0.9,
+            do_sample=False,
         )
 
         # Decode only the generated assistant tokens.
@@ -150,20 +173,17 @@ def run_chat_inference(
 
         # Include the system prompt and visible chat history.
         messages = [{"role": "system", "content": system_prompt}] + history
-        text = tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
+        text = _format_chat_prompt(tokenizer, messages)
         model_inputs = tokenizer([text], return_tensors="pt").to(device)
 
         # Keep chat replies shorter than the initial report.
         log_lines.append("Generating chat response...")
         generated_ids = model.generate(
             **model_inputs,
-            max_new_tokens=128,
-            do_sample=True,
-            temperature=0.45,
-            top_p=0.85,
-            repetition_penalty=1.08,
+            max_new_tokens=96,
+            do_sample=False,
+            repetition_penalty=1.18,
+            no_repeat_ngram_size=4,
         )
 
         # Decode only the latest assistant response.

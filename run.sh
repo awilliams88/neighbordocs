@@ -5,11 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-# Activate virtual environment if it exists.
-if [ -f ".venv/bin/activate" ]; then
-  # shellcheck source=/dev/null
-  source .venv/bin/activate
-fi
+
 
 TARGET="${1:-app}"
 PYTHON=".venv/bin/python"
@@ -21,8 +17,7 @@ setup() {
     python3 -m venv .venv
   fi
 
-  # shellcheck source=/dev/null
-  source .venv/bin/activate
+
 
   echo "Upgrading pip..."
   "$PYTHON" -m pip install --upgrade pip --retries 0 --timeout 5

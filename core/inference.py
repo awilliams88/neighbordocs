@@ -7,7 +7,7 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from config import ADAPTER_REPO_ID, MODEL_ID
+from env.config import ADAPTER_REPO_ID, MODEL_ID
 
 # Keep one model instance warm after the first request.
 _model: Any = None

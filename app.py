@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import os
-from runtime import patch_asyncio_cleanup_warning
-from styles import CUSTOM_CSS
-from ui import create_app, get_theme
+from env.runtime import patch_asyncio_cleanup_warning
+from ui.styles import CUSTOM_CSS
+from ui.layout import create_app, get_theme
 
 # Gradio SSR is noisy in Spaces for this app.
 os.environ.setdefault("GRADIO_SSR_MODE", "false")

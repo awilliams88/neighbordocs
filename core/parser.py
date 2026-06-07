@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from config import SUPPORTED_SUFFIXES
+from env.config import SUPPORTED_SUFFIXES
 
 
 def extract_journal_text(file_path: str | None) -> str:

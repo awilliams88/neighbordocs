@@ -20,9 +20,9 @@ except ImportError:
 
     spaces = _LocalSpacesFallback()
 
-from config import ENTRY_LIMIT, MODEL_ID, PARAMETER_COUNT
-from inference import run_chat_inference, run_model_inference
-from parser import extract_journal_text, parse_sections
+from env.config import ENTRY_LIMIT, MODEL_ID, PARAMETER_COUNT
+from core.inference import run_chat_inference, run_model_inference
+from core.parser import extract_journal_text, parse_sections
 
 CHAT_COACH_PROMPT = (
     "You are InnerSpace, a brief reflective CBT coach for private journaling. "

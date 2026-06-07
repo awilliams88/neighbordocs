@@ -115,20 +115,42 @@ This launches through `app.py` so Gradio receives the custom theme and CSS.
 
 ## Codebase
 
+### Root
 | File | Purpose |
 |---|---|
 | `app.py` | Gradio launch entry point |
-| `config.py` | Central constants — model IDs, repo URLs, limits |
-| `analyzer.py` | Journal analysis orchestrator with ZeroGPU decorator |
-| `inference.py` | Lazy model loader — applies LoRA adapter, runs local inference |
-| `modal/Meta.md` | Hugging Face model card for the LoRA adapter |
-| `parser.py` | File reader and section splitter |
-| `ui.py` | Gradio layout, components, and event hooks |
-| `styles.py` | Custom dark-violet CSS theme |
+
+### `env/` — App infrastructure
+| File | Purpose |
+|---|---|
+| `env/config.py` | Central constants — model IDs, repo URLs, limits |
+| `env/runtime.py` | Env var loader and asyncio cleanup patch |
+
+### `core/` — Business logic
+| File | Purpose |
+|---|---|
+| `core/analyzer.py` | Journal analysis orchestrator with ZeroGPU decorator |
+| `core/inference.py` | Lazy model loader — applies LoRA adapter, runs local inference |
+| `core/parser.py` | File reader and CBT section splitter |
+
+### `ui/` — Presentation
+| File | Purpose |
+|---|---|
+| `ui/layout.py` | Gradio layout, components, and event hooks |
+| `ui/styles.py` | Custom dark-violet CSS theme |
+
+### `modal/` — Remote fine-tuning
+| File | Purpose |
+|---|---|
 | `modal/tune.py` | QLoRA fine-tuning orchestrator (Modal.com) |
 | `modal/dataset.py` | CBT training dataset and prompt builders |
+| `modal/CARD.md` | Hugging Face model card for the LoRA adapter |
+
+### Project files
+| File | Purpose |
+|---|---|
 | `requirements.txt` | Python dependencies |
-| `run.sh` | Local dev utility |
+| `run.sh` | Local dev utility — setup, verify, launch |
 
 ---
 

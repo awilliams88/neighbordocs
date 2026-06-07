@@ -52,14 +52,14 @@ case "$TARGET" in
     if [ ! -x "$PYTHON" ]; then
       setup
     fi
-    echo "=== Running Ruff Formatter (Auto-fixing) ==="
-    "$PYTHON" -m ruff format *.py modal/*.py
-    echo "=== Running Ruff Linter (Auto-fixing) ==="
-    "$PYTHON" -m ruff check --fix *.py modal/*.py
-    echo "=== Running Pyright Type Checker ==="
-    "$PYTHON" -m pyright *.py modal/*.py
-    echo "=== Compiling Python Files ==="
-    "$PYTHON" -m compileall *.py modal/*.py
+    echo "→ format"
+    "$PYTHON" -m ruff format app.py env/*.py core/*.py ui/*.py modal/*.py
+    echo "→ lint"
+    "$PYTHON" -m ruff check --fix app.py env/*.py core/*.py ui/*.py modal/*.py
+    echo "→ types"
+    "$PYTHON" -m pyright app.py env/*.py core/*.py ui/*.py modal/*.py
+    echo "→ compile"
+    "$PYTHON" -m compileall -q app.py env/ core/ ui/ modal/
     ;;
   app|run|*)
     ensure_venv

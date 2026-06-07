@@ -4,13 +4,13 @@ from typing import Any
 import gradio as gr
 from gradio.themes import Soft
 
-from config import (
+from env.config import (
     APP_DESCRIPTION,
     APP_TITLE,
     GITHUB_URL,
     SPACE_URL,
 )
-from analyzer import (
+from core.analyzer import (
     add_user_message,
     analyze_journal_ui,
     chat_respond_ui,

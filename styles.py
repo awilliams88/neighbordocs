@@ -7,9 +7,7 @@ body, .gradio-container {
     color: #e2e8f0 !important;
     font-family: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
-.gradio-container {
-    padding: 1.25rem 1.5rem 2rem 1.5rem !important;
-}
+
 
 /* Header and product kicker */
 #nd-header {
@@ -38,7 +36,7 @@ body, .gradio-container {
     margin: 0 auto 2rem auto;
     padding: 0.75rem 2.25rem !important;
     background: transparent !important;
-    border: 2px solid #7c3aed !important;
+    border: 2px solid #c084fc !important;
     box-shadow: none !important;
     text-align: center;
     color: #c7d2fe !important;
@@ -47,14 +45,14 @@ body, .gradio-container {
     border-radius: 40px !important;
 }
 #nd-journal-input textarea {
-    min-height: 260px !important;
+    min-height: 200px !important;
     resize: vertical !important;
 }
 
 /* Main panels */
 .nd-main-grid {
     gap: 1.25rem !important;
-    align-items: flex-start !important;
+    align-items: stretch !important;
 }
 .nd-input-panel, .nd-output-panel, .nd-analysis-section {
     background-color: #151829 !important;
@@ -65,6 +63,10 @@ body, .gradio-container {
 }
 .nd-analysis-section {
     margin-top: 1.25rem !important;
+}
+.nd-output-panel {
+    display: flex !important;
+    flex-direction: column !important;
 }
 .nd-input-panel h3, .nd-output-panel h3, .nd-analysis-section h3 {
     margin: 0 0 0.8rem 0 !important;
@@ -96,9 +98,8 @@ body, .gradio-container {
     background-color: #110e20 !important;
     border: 1px solid #3b1b63 !important;
     border-radius: 8px !important;
-    height: 380px !important;
-    max-height: 380px !important;
-    min-height: 380px !important;
+    flex: 1 1 auto !important;
+    min-height: 280px !important;
     overflow: hidden !important;
 }
 .nd-chatbot > div {
@@ -161,6 +162,28 @@ body, .gradio-container {
 }
 .nd-output-card {
     min-width: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.nd-card-grid > .form, .nd-card-grid > .row, .nd-card-grid > div {
+    display: flex !important;
+    gap: 1.25rem !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.nd-card-grid .block {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: 1 1 0% !important;
 }
 .nd-output-card textarea {
     font-family: inherit !important;
@@ -243,5 +266,41 @@ body, .gradio-container {
 }
 #nd-links a:hover {
     text-decoration: underline !important;
+}
+
+
+
+/* Custom styling for labels to remove excessive purple */
+.gradio-container label span, .gradio-container .nd-slider span {
+    background-color: #272a44 !important;
+    color: #cbd5e1 !important;
+    border: 1px solid #3b3f66 !important;
+}
+
+/* Specific card label accents matching their card theme */
+.nd-emotions-card label span {
+    background-color: rgba(124, 58, 237, 0.25) !important;
+    color: #c7d2fe !important;
+    border: 1px solid rgba(124, 58, 237, 0.5) !important;
+}
+.nd-areas-card label span {
+    background-color: rgba(16, 185, 129, 0.25) !important;
+    color: #a7f3d0 !important;
+    border: 1px solid rgba(16, 185, 129, 0.5) !important;
+}
+.nd-distortions-card label span {
+    background-color: rgba(239, 68, 68, 0.25) !important;
+    color: #fca5a5 !important;
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+}
+.nd-reframe-card label span {
+    background-color: rgba(14, 165, 233, 0.25) !important;
+    color: #bae6fd !important;
+    border: 1px solid rgba(14, 165, 233, 0.5) !important;
+}
+.nd-next-step-card label span {
+    background-color: rgba(245, 158, 11, 0.25) !important;
+    color: #fde68a !important;
+    border: 1px solid rgba(245, 158, 11, 0.5) !important;
 }
 """

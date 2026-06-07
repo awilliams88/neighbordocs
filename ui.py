@@ -48,10 +48,10 @@ def create_app() -> gr.Blocks:
         with gr.Row(elem_classes=["nd-main-grid"]):
             # Left column collects journal text or file input.
             with gr.Column(scale=1, elem_classes=["nd-input-panel"]):
-                gr.Markdown("### ✍️ Today's Journal Entry")
+                gr.Markdown("## Journal Entry ✍️")
                 notes_input = gr.Textbox(
                     label="Write your thoughts here...",
-                    lines=10,
+                    lines=8,
                     placeholder="Express your thoughts freely. What happened today? How are you feeling?",
                     elem_id="nd-journal-input",
                 )
@@ -78,11 +78,9 @@ def create_app() -> gr.Blocks:
 
             # Right column displays the coaching chat panel.
             with gr.Column(scale=1, elem_classes=["nd-output-panel"]):
-                gr.Markdown("### 💭 Reflective CBT Coach")
+                gr.Markdown("## Mindful Coach 👨‍⚕️")
                 chatbot = gr.Chatbot(
-                    label="💭 Reflective CBT Coach",
-                    height=380,
-                    max_height=380,
+                    label="Mindful CBT Coach",
                     elem_classes=["nd-chatbot"],
                     show_label=False,
                 )
@@ -104,38 +102,36 @@ def create_app() -> gr.Blocks:
                     )
 
         # Underneath both panels, display CBT Analysis report cards.
-        with gr.Column(
-            elem_classes=["nd-analysis-section"], visible=False
-        ) as analysis_section:
-            gr.Markdown("### 📊 Cognitive Analysis & Grounded Reframes")
+        with gr.Column(elem_classes=["nd-analysis-section"]):
+            gr.Markdown("## Cognitive Analysis 🧐")
             with gr.Row(elem_classes=["nd-card-grid"]):
                 sentiment_output = gr.Textbox(
-                    label="📊 Dominant Emotions",
+                    label="Dominant Emotions 😝",
                     lines=5,
                     interactive=False,
                     elem_classes=["nd-output-card", "nd-emotions-card"],
                 )
                 areas_output = gr.Textbox(
-                    label="🏷️ Affected Life Areas",
+                    label="Affected Life Areas 🎯",
                     lines=5,
                     interactive=False,
                     elem_classes=["nd-output-card", "nd-areas-card"],
                 )
                 distortions_output = gr.Textbox(
-                    label="⚠️ Cognitive Distortions",
+                    label="Cognitive Distortions 🧠",
                     lines=5,
                     interactive=False,
                     elem_classes=["nd-output-card", "nd-distortions-card"],
                 )
             with gr.Row(elem_classes=["nd-card-grid"]):
                 reframe_output = gr.Textbox(
-                    label="🧭 Balanced Reframe",
+                    label="Balanced Reframe 👨‍🏫",
                     lines=5,
                     interactive=False,
                     elem_classes=["nd-output-card", "nd-reframe-card"],
                 )
                 next_step_output = gr.Textbox(
-                    label="✅ Tiny Next Step",
+                    label="Tiny Next Step 🏃",
                     lines=5,
                     interactive=False,
                     elem_classes=["nd-output-card", "nd-next-step-card"],
@@ -202,7 +198,7 @@ def create_app() -> gr.Blocks:
         reset_event = run_button.click(
             fn=reset_reflection_ui,
             inputs=[],
-            outputs=[chatbot, chat_input, model_output, analysis_section],
+            outputs=[chatbot, chat_input, model_output],
         )
 
         # Analysis populates report cards, chat, and context state.
@@ -219,7 +215,6 @@ def create_app() -> gr.Blocks:
                 next_step_output,
                 chatbot,
                 journal_context_state,
-                analysis_section,
             ],
         )
 

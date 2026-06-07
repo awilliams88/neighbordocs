@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # App copy shown in the Gradio header.
-APP_TITLE = "InnerSpace"
+APP_TITLE = "Inner 🧠 Space"
 APP_DESCRIPTION = "Local-first cognitive journal & reflection coach."
 
 # Journal inputs are limited to small private text files.

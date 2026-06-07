@@ -70,12 +70,9 @@ def train_lora(
         get_chat_training_examples,
     )
 
-    # Tokenizer is loaded before formatting chat examples.
+    # Load the tokenizer for the base model.
     print(f"Loading tokenizer for {MODEL_ID}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-    # Set pad_token_id directly to avoid modifying the special tokens registry,
-    # which would trigger a model config mismatch warning from transformers.
-    tokenizer.pad_token_id = tokenizer.eos_token_id
 
     # Synthetic examples capture reports and follow-up coaching turns.
     print("Preparing training dataset...")
@@ -102,8 +99,10 @@ def train_lora(
         text = tokenizer.apply_chat_template(messages, tokenize=False)
         formatted_dataset.append({"text": text})
 
+    # Print the number of training conversations.
     print(f"Prepared {len(formatted_dataset)} total training conversations.")
 
+    # Convert the list of formatted examples into a Hugging Face Dataset.
     dataset = Dataset.from_list(formatted_dataset)
 
     # QLoRA keeps training feasible on a single A10G.
@@ -117,13 +116,18 @@ def train_lora(
 
     # Load the base model in 4-bit mode for adapter training.
     print(f"Loading quantized base model {MODEL_ID}...")
-    # dtype is intentionally omitted — bfloat16 compute dtype is already
-    # declared in BitsAndBytesConfig; passing it again here conflicts with quantization.
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
         quantization_config=bnb_config,
         device_map="auto",
     )
+
+    # Set the EOS token ID to the tokenizer's EOS token, and align the PAD token ID to it as well.
+    model.config.eos_token_id = tokenizer.eos_token_id
+    model.config.pad_token_id = tokenizer.eos_token_id
+    if getattr(model, "generation_config", None) is not None:
+        model.generation_config.eos_token_id = tokenizer.eos_token_id
+        model.generation_config.pad_token_id = tokenizer.eos_token_id
 
     # Prepare quantized layers for PEFT adapter updates.
     model = prepare_model_for_kbit_training(model)

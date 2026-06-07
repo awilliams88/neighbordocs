@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Get project root directory
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
@@ -14,21 +15,20 @@ TARGET="${1:-app}"
 PYTHON=".venv/bin/python"
 
 setup() {
-  # Create or repair the local Python environment.
+  # Create or repair the local Python environment
   if [ ! -x "$PYTHON" ]; then
+    echo "Creating Python virtual environment..."
     python3 -m venv .venv
   fi
 
   # shellcheck source=/dev/null
   source .venv/bin/activate
 
-  # Keep pip cache inside the repo to avoid global cache permission warnings.
-  export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$ROOT_DIR/.pip-cache}"
-  mkdir -p "$PIP_CACHE_DIR"
-
-  # Update pip first so dependency installs use the latest resolver.
-  "$PYTHON" -m pip install --upgrade pip --retries 0 --timeout 5 --quiet
-  "$PYTHON" -m pip install --quiet -r requirements.txt
+  echo "Upgrading pip..."
+  "$PYTHON" -m pip install --upgrade pip --retries 0 --timeout 5
+  
+  echo "Installing dependencies from requirements.txt..."
+  "$PYTHON" -m pip install -r requirements.txt
 }
 
 ensure_venv() {
@@ -44,23 +44,17 @@ case "$TARGET" in
     setup
     ;;
   verify)
-    setup
-    echo "=== Running Ruff Formatting Check ==="
-    "$PYTHON" -m ruff format --check *.py
-    echo "=== Running Ruff Linter ==="
-    "$PYTHON" -m ruff check *.py
+    if [ ! -x "$PYTHON" ]; then
+      setup
+    fi
+    echo "=== Running Ruff Formatter (Auto-fixing) ==="
+    "$PYTHON" -m ruff format *.py
+    echo "=== Running Ruff Linter (Auto-fixing) ==="
+    "$PYTHON" -m ruff check --fix *.py
     echo "=== Running Pyright Type Checker ==="
     "$PYTHON" -m pyright *.py
     echo "=== Compiling Python Files ==="
     "$PYTHON" -m compileall *.py
-    ;;
-  format)
-    setup
-    "$PYTHON" -m ruff format *.py
-    ;;
-  lint)
-    setup
-    "$PYTHON" -m ruff check *.py
     ;;
   app|run|*)
     ensure_venv

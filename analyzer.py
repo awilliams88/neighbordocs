@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
+import gradio as gr
 
 try:
     import spaces
@@ -150,7 +151,9 @@ def analyze_journal_ui(
     file_path: str | None,
     raw_text: str,
     distress_level: float,
-) -> tuple[str, str, str, str, str, str, str, list[dict[str, str]], str]:
+) -> tuple[
+    str, str, str, str, str, str, str, list[dict[str, str]], str, dict[str, Any]
+]:
     """Gradio-compatible entry point decorated for Hugging Face ZeroGPU compatibility."""
     # Convert the report into Gradio component outputs.
     report = analyze_journal(file_path, raw_text, distress_level)
@@ -170,28 +173,37 @@ def analyze_journal_ui(
         report.next_step,
         [{"role": "assistant", "content": report.reflection}],
         journal_context,
+        gr.update(visible=True),
     )
 
 
-def reset_reflection_ui() -> tuple[list[dict[str, str]], str, str]:
+def reset_reflection_ui() -> tuple[list[dict[str, str]], str, str, dict[str, Any]]:
     """Clears the coach before starting a new journal analysis."""
     # Clear chat, chat input, and execution logs immediately on analyze.
-    return [], "", "Starting a fresh reflection..."
+    return [], "", "Starting a fresh reflection...", gr.update(visible=False)
+
+
+def add_user_message(
+    history: list[dict[str, str]] | None,
+    user_message: str,
+) -> tuple[list[dict[str, str]], str]:
+    """Adds the user's message to the chat history instantly in the UI."""
+    updated_history = list(history) if history else []
+    if not user_message.strip():
+        return updated_history, ""
+    updated_history.append({"role": "user", "content": user_message})
+    return updated_history, ""
 
 
 @spaces.GPU(duration=30)
 def chat_respond_ui(
     history: list[dict[str, str]] | None,
-    user_message: str,
     journal_context: str,
-) -> tuple[list[dict[str, str]], str, str]:
+) -> tuple[list[dict[str, str]], str]:
     """Gradio-compatible chat handler decorated for Hugging Face ZeroGPU compatibility."""
     updated_history = list(history) if history else []
-    if not user_message.strip():
-        return updated_history, "", "Empty user message. No inference run."
-
-    # Add the user's latest reply before generation.
-    updated_history.append({"role": "user", "content": user_message})
+    if not updated_history:
+        return updated_history, "No message history to respond to."
 
     # Ground the coach in the original journal when available.
     if journal_context.strip():
@@ -218,4 +230,4 @@ def chat_respond_ui(
         ]
     )
 
-    return updated_history, "", model_logs
+    return updated_history, model_logs

@@ -10,7 +10,12 @@ from config import (
     GITHUB_URL,
     SPACE_URL,
 )
-from analyzer import analyze_journal_ui, chat_respond_ui, reset_reflection_ui
+from analyzer import (
+    add_user_message,
+    analyze_journal_ui,
+    chat_respond_ui,
+    reset_reflection_ui,
+)
 
 
 def get_theme() -> Any:
@@ -71,13 +76,15 @@ def create_app() -> gr.Blocks:
                     elem_classes=["nd-btn"],
                 )
 
-            # Right column displays coaching and analysis cards.
+            # Right column displays the coaching chat panel.
             with gr.Column(scale=1, elem_classes=["nd-output-panel"]):
+                gr.Markdown("### 💭 Reflective CBT Coach")
                 chatbot = gr.Chatbot(
                     label="💭 Reflective CBT Coach",
-                    height=300,
-                    max_height=300,
+                    height=380,
+                    max_height=380,
                     elem_classes=["nd-chatbot"],
+                    show_label=False,
                 )
                 with gr.Row(elem_classes=["nd-chat-row"]):
                     chat_input = gr.Textbox(
@@ -96,39 +103,43 @@ def create_app() -> gr.Blocks:
                         elem_classes=["nd-send-btn"],
                     )
 
-                # Compact cards summarize the structured report.
-                with gr.Row(elem_classes=["nd-card-grid"]):
-                    sentiment_output = gr.Textbox(
-                        label="📊 Dominant Emotions",
-                        lines=5,
-                        interactive=False,
-                        elem_classes=["nd-output-card", "nd-emotions-card"],
-                    )
-                    areas_output = gr.Textbox(
-                        label="🏷️ Affected Life Areas",
-                        lines=5,
-                        interactive=False,
-                        elem_classes=["nd-output-card", "nd-areas-card"],
-                    )
-                    distortions_output = gr.Textbox(
-                        label="⚠️ Cognitive Distortions",
-                        lines=5,
-                        interactive=False,
-                        elem_classes=["nd-output-card", "nd-distortions-card"],
-                    )
-                with gr.Row(elem_classes=["nd-card-grid"]):
-                    reframe_output = gr.Textbox(
-                        label="🧭 Balanced Reframe",
-                        lines=5,
-                        interactive=False,
-                        elem_classes=["nd-output-card", "nd-reframe-card"],
-                    )
-                    next_step_output = gr.Textbox(
-                        label="✅ Tiny Next Step",
-                        lines=5,
-                        interactive=False,
-                        elem_classes=["nd-output-card", "nd-next-step-card"],
-                    )
+        # Underneath both panels, display CBT Analysis report cards.
+        with gr.Column(
+            elem_classes=["nd-analysis-section"], visible=False
+        ) as analysis_section:
+            gr.Markdown("### 📊 Cognitive Analysis & Grounded Reframes")
+            with gr.Row(elem_classes=["nd-card-grid"]):
+                sentiment_output = gr.Textbox(
+                    label="📊 Dominant Emotions",
+                    lines=5,
+                    interactive=False,
+                    elem_classes=["nd-output-card", "nd-emotions-card"],
+                )
+                areas_output = gr.Textbox(
+                    label="🏷️ Affected Life Areas",
+                    lines=5,
+                    interactive=False,
+                    elem_classes=["nd-output-card", "nd-areas-card"],
+                )
+                distortions_output = gr.Textbox(
+                    label="⚠️ Cognitive Distortions",
+                    lines=5,
+                    interactive=False,
+                    elem_classes=["nd-output-card", "nd-distortions-card"],
+                )
+            with gr.Row(elem_classes=["nd-card-grid"]):
+                reframe_output = gr.Textbox(
+                    label="🧭 Balanced Reframe",
+                    lines=5,
+                    interactive=False,
+                    elem_classes=["nd-output-card", "nd-reframe-card"],
+                )
+                next_step_output = gr.Textbox(
+                    label="✅ Tiny Next Step",
+                    lines=5,
+                    interactive=False,
+                    elem_classes=["nd-output-card", "nd-next-step-card"],
+                )
 
         # Diagnostics stay collapsed unless the user wants execution details.
         with gr.Accordion("⚙️ Diagnostics & System Execution Logs", open=False):
@@ -191,7 +202,7 @@ def create_app() -> gr.Blocks:
         reset_event = run_button.click(
             fn=reset_reflection_ui,
             inputs=[],
-            outputs=[chatbot, chat_input, model_output],
+            outputs=[chatbot, chat_input, model_output, analysis_section],
         )
 
         # Analysis populates report cards, chat, and context state.
@@ -208,19 +219,33 @@ def create_app() -> gr.Blocks:
                 next_step_output,
                 chatbot,
                 journal_context_state,
+                analysis_section,
             ],
         )
 
         # Both enter key and button submit chat replies.
-        chat_input.submit(
-            fn=chat_respond_ui,
-            inputs=[chatbot, chat_input, journal_context_state],
-            outputs=[chatbot, chat_input, model_output],
+        user_msg_event = chat_input.submit(
+            fn=add_user_message,
+            inputs=[chatbot, chat_input],
+            outputs=[chatbot, chat_input],
+            queue=False,
         )
-        send_button.click(
+        user_msg_event.then(
             fn=chat_respond_ui,
-            inputs=[chatbot, chat_input, journal_context_state],
-            outputs=[chatbot, chat_input, model_output],
+            inputs=[chatbot, journal_context_state],
+            outputs=[chatbot, model_output],
+        )
+
+        send_event = send_button.click(
+            fn=add_user_message,
+            inputs=[chatbot, chat_input],
+            outputs=[chatbot, chat_input],
+            queue=False,
+        )
+        send_event.then(
+            fn=chat_respond_ui,
+            inputs=[chatbot, journal_context_state],
+            outputs=[chatbot, model_output],
         )
 
     return demo

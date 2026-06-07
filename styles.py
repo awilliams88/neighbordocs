@@ -56,17 +56,27 @@ body, .gradio-container {
     gap: 1.25rem !important;
     align-items: flex-start !important;
 }
-.nd-input-panel, .nd-output-panel {
+.nd-input-panel, .nd-output-panel, .nd-analysis-section {
     background-color: #151829 !important;
     border: 1px solid #2d2e4a !important;
     border-radius: 8px !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
-    padding: 1rem !important;
+    padding: 1.25rem !important;
 }
-.nd-input-panel h3 {
-    margin: 0 0 0.7rem 0 !important;
+.nd-analysis-section {
+    margin-top: 1.25rem !important;
+}
+.nd-input-panel h3, .nd-output-panel h3, .nd-analysis-section h3 {
+    margin: 0 0 0.8rem 0 !important;
     color: #e2e8f0 !important;
+}
+.nd-input-panel h3, .nd-output-panel h3 {
     font-size: 1.05rem !important;
+}
+.nd-analysis-section h3 {
+    font-size: 1.20rem !important;
+    border-bottom: 1px solid #2d2e4a;
+    padding-bottom: 0.5rem;
 }
 
 /* Output text areas */
@@ -86,9 +96,9 @@ body, .gradio-container {
     background-color: #110e20 !important;
     border: 1px solid #3b1b63 !important;
     border-radius: 8px !important;
-    height: 300px !important;
-    max-height: 300px !important;
-    min-height: 300px !important;
+    height: 380px !important;
+    max-height: 380px !important;
+    min-height: 380px !important;
     overflow: hidden !important;
 }
 .nd-chatbot > div {
@@ -158,7 +168,7 @@ body, .gradio-container {
     line-height: 1.5 !important;
     padding: 0.75rem !important;
     border-radius: 8px !important;
-    min-height: 136px !important;
+    min-height: 110px !important;
     overflow: auto !important;
 }
 

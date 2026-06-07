@@ -2,12 +2,18 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$ROOT_DIR/.." && pwd)"
 cd "$ROOT_DIR"
 
-# Cleanup all cache folders across the codebase on script exit.
+# Cleanup all cache folders across the entire repo on script exit.
 cleanup() {
-  find "$ROOT_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-  find "$ROOT_DIR" -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
+  echo "Cleaning cache folders..."
+  find "$REPO_ROOT" \
+    -not -path "$REPO_ROOT/.git/*" \
+    -not -path "$ROOT_DIR/.venv/*" \
+    \( -type d -name "__pycache__" -o -type d -name ".ruff_cache" \) \
+    -exec rm -rf {} + 2>/dev/null || true
+  echo "Cache cleaned."
 }
 trap cleanup EXIT
 

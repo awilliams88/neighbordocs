@@ -10,6 +10,10 @@ modal_any: Any = modal
 # Modal app groups the remote fine-tuning job.
 app = modal_any.App("inner-space-tuner")
 
+# Mount the full modal/ directory so dataset.py is importable inside the container.
+_modal_dir = os.path.dirname(__file__)
+_mount = modal_any.Mount.from_local_dir(_modal_dir, remote_path="/root")
+
 # Container dependencies live in Modal, not the local dev environment.
 image = modal_any.Image.debian_slim().pip_install(
     "torch",
@@ -35,6 +39,7 @@ ADAPTER_REPO_ID = "build-small-hackathon/inner-space-1b-sft-cbt"
     gpu="A10G",
     timeout=7200,
     volumes={"/checkpoints": volume},
+    mounts=[_mount],
     secrets=[modal_any.Secret.from_name("huggingface-secret")],
 )
 def train_lora(

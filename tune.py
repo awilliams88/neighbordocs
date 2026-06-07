@@ -403,7 +403,7 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
         MODEL_ID,
         quantization_config=bnb_config,
         device_map="auto",
-        torch_dtype=torch.bfloat16,
+        dtype=torch.bfloat16,
     )
 
     # Prepare quantized layers for PEFT adapter updates.
@@ -454,6 +454,10 @@ def train_lora(hf_token: str | None = None, repo_id: str | None = None):
     print("Saving fine-tuned adapter...")
     model.save_pretrained("/checkpoints/inner-space-final")
     tokenizer.save_pretrained("/checkpoints/inner-space-final")
+
+    # Commit the changes to the persistent volume in Modal
+    print("Committing checkpoint changes to Modal Volume...")
+    volume.commit()
 
     # Prefer explicit token and repo values when provided.
     if not hf_token:

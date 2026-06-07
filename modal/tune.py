@@ -11,7 +11,7 @@ modal_any: Any = modal
 app = modal_any.App("inner-space-tuner")
 
 # Bake dataset.py into the image so it is importable at /root/dataset.py.
-# copy_local_file() replaces the removed modal.Mount API (Modal >= 1.0).
+# add_local_file() is the correct Modal 1.x API for embedding local files.
 image = (
     modal_any.Image.debian_slim()
     .pip_install(
@@ -24,7 +24,7 @@ image = (
         "datasets",
         "huggingface_hub",
     )
-    .copy_local_file(
+    .add_local_file(
         os.path.join(os.path.dirname(__file__), "dataset.py"),
         "/root/dataset.py",
     )

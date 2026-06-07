@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Get project root directory
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-
+# Cleanup all cache folders across the codebase on script exit.
+cleanup() {
+  find "$ROOT_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+  find "$ROOT_DIR" -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
+}
+trap cleanup EXIT
 
 TARGET="${1:-app}"
 PYTHON=".venv/bin/python"
@@ -43,13 +47,13 @@ case "$TARGET" in
       setup
     fi
     echo "=== Running Ruff Formatter (Auto-fixing) ==="
-    "$PYTHON" -m ruff format *.py
+    "$PYTHON" -m ruff format *.py modal/*.py
     echo "=== Running Ruff Linter (Auto-fixing) ==="
-    "$PYTHON" -m ruff check --fix *.py
+    "$PYTHON" -m ruff check --fix *.py modal/*.py
     echo "=== Running Pyright Type Checker ==="
-    "$PYTHON" -m pyright *.py
+    "$PYTHON" -m pyright *.py modal/*.py
     echo "=== Compiling Python Files ==="
-    "$PYTHON" -m compileall *.py
+    "$PYTHON" -m compileall *.py modal/*.py
     ;;
   app|run|*)
     ensure_venv

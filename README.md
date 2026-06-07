@@ -121,11 +121,12 @@ This launches through `app.py` so Gradio receives the custom theme and CSS.
 | `config.py` | Central constants — model IDs, repo URLs, limits |
 | `analyzer.py` | Journal analysis orchestrator with ZeroGPU decorator |
 | `inference.py` | Lazy model loader — applies LoRA adapter, runs local inference |
-| `MODEL_CARD.md` | Hugging Face model card for the LoRA adapter |
+| `modal/Meta.md` | Hugging Face model card for the LoRA adapter |
 | `parser.py` | File reader and section splitter |
 | `ui.py` | Gradio layout, components, and event hooks |
 | `styles.py` | Custom dark-violet CSS theme |
-| `tune.py` | QLoRA fine-tuning script (Modal.com) |
+| `modal/tune.py` | QLoRA fine-tuning orchestrator (Modal.com) |
+| `modal/dataset.py` | CBT training dataset and prompt builders |
 | `requirements.txt` | Python dependencies |
 | `run.sh` | Local dev utility |
 

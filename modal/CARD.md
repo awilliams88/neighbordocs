@@ -56,8 +56,7 @@ from evidence, and ask one grounded question.
 - Method: QLoRA with 4-bit NF4 quantization
 - Adapter: rank 16 LoRA on attention projections
 - Hardware: Modal NVIDIA A10G
-- Training set: 17 structured journal examples and 8 multi-turn coach examples
-- Steps: 220
+- Training set: 30 structured journal examples and 15 multi-turn coach examples
 - Sequence length: 1536 tokens
 - App runtime: Hugging Face Space with local model execution only
 

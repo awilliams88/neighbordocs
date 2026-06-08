@@ -50,7 +50,7 @@ The base model is general-purpose. Fine-tuning teaches it the core CBT output st
 **Training details:**
 - Method: QLoRA (4-bit NF4 quantization + LoRA adapters on attention layers)
 - Hardware: NVIDIA A10G GPU via [Modal.com](https://modal.com)
-- Dataset: 17 structured CBT journal entries plus 8 multi-turn follow-up coaching examples
+- Dataset: 17 structured CBT journal entries plus 19 multi-turn follow-up coaching examples (including off-topic deflection and redirection)
 - Output format: six sections aligned with the app UI — emotions, life areas, cognitive distortions, balanced reframe, tiny next step, and reflection
 - Follow-up behavior: brief second-turn coaching for self-critical replies without hidden reasoning tags or business-style metrics
 - Steps: 220 with a rank-16 LoRA adapter and 1536-token examples

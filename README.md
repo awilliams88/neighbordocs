@@ -16,6 +16,7 @@ tags:
 - openai
 - well-tuned
 - off-brand
+- off-the-grid
 - tiny-titan
 - mental-health
 - journaling
@@ -37,6 +38,18 @@ InnerSpace is a reflective journaling tool, not medical advice, diagnosis, crisi
 - **Github Repo**: [awilliams88/innerspace](https://github.com/awilliams88/innerspace)
 - **Hugging Space**: [build-small-hackathon/innerspace](https://huggingface.co/spaces/build-small-hackathon/innerspace)
 - **Fine-tuned Model**: [build-small-hackathon/inner-space-1b-sft-cbt](https://huggingface.co/build-small-hackathon/inner-space-1b-sft-cbt)
+
+## Hackathon Alignment
+
+| Requirement | InnerSpace implementation |
+|---|---|
+| Gradio Space in `build-small-hackathon` | `build-small-hackathon/innerspace` |
+| Track | Backyard AI |
+| Sponsor focus | OpenBMB MiniCPM5 with OpenAI-linked safety context |
+| Merit targets | Well-Tuned, Off-Brand, Tiny Titan, Off the Grid |
+| Multimodal input | Text upload and local file entry for journal prompts |
+| Fine-tuning | Modal QLoRA adapter trained on CBT reflection examples |
+| Demo/social links | Demo video and LinkedIn post are already published |
 
 ## What It Does
 

@@ -23,7 +23,7 @@ InnerSpace is a reflective journaling tool, not medical advice, diagnosis, crisi
 
 - **Demo**: [Video](InnerSpaceDemo.mp4)
 - **Social Post**: [LinkedIn](https://www.linkedin.com/posts/awilliams1988_buildsmall-huggingface-ai-ugcPost-7469692012166893568-T16Y)
-- **Source Code**: [awilliams88/innerspace](https://github.com/awilliams88/innerspace)
+- **Github Repo**: [awilliams88/innerspace](https://github.com/awilliams88/innerspace)
 - **Hugging Space**: [build-small-hackathon/innerspace](https://huggingface.co/spaces/build-small-hackathon/innerspace)
 - **Fine-tuned Model**: [build-small-hackathon/inner-space-1b-sft-cbt](https://huggingface.co/build-small-hackathon/inner-space-1b-sft-cbt)
 

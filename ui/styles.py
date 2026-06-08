@@ -54,6 +54,14 @@ body, .gradio-container {
     gap: 1.25rem !important;
     align-items: stretch !important;
 }
+.nd-main-grid > .form, .nd-main-grid > .row, .nd-main-grid > div {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 1.25rem !important;
+}
+.nd-input-panel, .nd-output-panel {
+    flex: 1 1 320px !important;
+}
 .nd-input-panel, .nd-output-panel, .nd-analysis-section, .nd-examples-section {
     background-color: #151829 !important;
     border: 1px solid #2d2e4a !important;
@@ -170,6 +178,7 @@ body, .gradio-container {
 
 .nd-card-grid > .form, .nd-card-grid > .row, .nd-card-grid > div {
     display: flex !important;
+    flex-wrap: wrap !important;
     gap: 1.25rem !important;
     background: transparent !important;
     border: none !important;
@@ -183,7 +192,7 @@ body, .gradio-container {
     box-shadow: none !important;
     padding: 0 !important;
     margin: 0 !important;
-    flex: 1 1 0% !important;
+    flex: 1 1 240px !important;
 }
 .nd-output-card textarea {
     font-family: inherit !important;
@@ -228,8 +237,13 @@ body, .gradio-container {
     align-items: stretch !important;
     margin-top: 0.85rem !important;
 }
+.nd-example-grid > .form, .nd-example-grid > .row, .nd-example-grid > div {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 1rem !important;
+}
 .nd-example-card {
-    min-width: 0 !important;
+    flex: 1 1 240px !important;
     background-color: rgba(12, 14, 23, 0.86) !important;
     border: 1px solid rgba(148, 163, 184, 0.22) !important;
     border-radius: 8px !important;
@@ -369,4 +383,5 @@ body, .gradio-container {
     color: #fde68a !important;
     border: 1px solid rgba(245, 158, 11, 0.5) !important;
 }
+
 """

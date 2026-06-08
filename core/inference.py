@@ -41,6 +41,40 @@ def clean_generated_text(text: str, max_sentences: int | None = None) -> str:
     text = re.sub(r"[ \t]+", " ", text)
     text = "\n".join(line.strip() for line in text.splitlines())
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
+
+    # Apply conversational meta-prefix stripping only for chat replies (when max_sentences is set)
+    if max_sentences is not None:
+        lines = text.splitlines()
+        cleaned_lines = []
+        for line in lines:
+            line_strip = line.strip()
+            if not line_strip:
+                continue
+            # Skip conversational meta-introductions
+            normalized_line = line_strip.lower().rstrip(".:")
+            if normalized_line in (
+                "here goes",
+                "here is a reply",
+                "here is the reply",
+                "sure",
+                "here's a reply",
+                "here's the reply",
+                "here is my reply",
+                "here is a cbt reflection",
+                "here is a cbt reflection",
+                "here is the reflection",
+                "cbt reflection",
+            ):
+                continue
+            # Strip prefixes like "AI:", "Assistant:", "Coach:", "InnerSpace:", "Response:"
+            prefix_pattern = re.compile(
+                r"^(ai|assistant|coach|innerspace|response):\s*", re.IGNORECASE
+            )
+            line_strip = prefix_pattern.sub("", line_strip)
+            if line_strip:
+                cleaned_lines.append(line_strip)
+        text = "\n\n".join(cleaned_lines)
+
     if max_sentences is None or not text:
         return text
 

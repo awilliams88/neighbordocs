@@ -322,6 +322,30 @@ def _clean_chat_response(response: str, user_message: Any) -> str:
     return response
 
 
+def build_chat_model_history(
+    history: list[dict[str, Any]], journal_context: str
+) -> list[dict[str, str]]:
+    """Constructs the model chat history, formatting the first user turn with journal context."""
+    model_history = []
+    is_first_user = True
+    for message in history:
+        role = message.get("role")
+        content = _stringify_chat_content(message.get("content"))
+        if role == "user":
+            if is_first_user:
+                # Prepend the first user message with journal context.
+                formatted_content = f"Context: {journal_context}\nUser reply: {content}"
+                model_history.append({"role": "user", "content": formatted_content})
+                is_first_user = False
+            else:
+                model_history.append({"role": "user", "content": content})
+        elif role == "assistant":
+            # Skip the initial assistant reflection card that starts the session
+            if not is_first_user:
+                model_history.append({"role": "assistant", "content": content})
+    return model_history
+
+
 @spaces.GPU(duration=30)
 def chat_respond_ui(
     history: list[dict[str, Any]] | None,
@@ -339,17 +363,24 @@ def chat_respond_ui(
     ):
         return updated_history, "No new user message. No inference run."
 
+    # Validate that a journal entry has been analyzed first.
+    if not journal_context or not journal_context.strip():
+        response = (
+            "Hello! I am your mindful CBT coach. Please write down a journal entry on the left "
+            "and click **Analyze Thoughts** first, so we have a scenario to reflect on together."
+        )
+        updated_history.append({"role": "assistant", "content": response})
+        return (
+            updated_history,
+            "System redirection: Prompted user to analyze a journal entry first.",
+        )
+
     # Match the chat format used during adapter fine-tuning.
     latest_user_message = _last_user_message(updated_history)
     if not latest_user_message:
         return updated_history, "No text message to respond to."
 
-    model_history = [
-        {
-            "role": "user",
-            "content": build_chat_followup_prompt(journal_context, latest_user_message),
-        }
-    ]
+    model_history = build_chat_model_history(updated_history, journal_context)
 
     # Generate and append the assistant reply.
     response, log_details = run_chat_inference(model_history, CHAT_FOLLOWUP_PROMPT)

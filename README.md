@@ -19,9 +19,15 @@ The model analyzes journal entries through the lens of **Cognitive Behavioral Th
 
 InnerSpace is a reflective journaling tool, not medical advice, diagnosis, crisis counseling, or a replacement for a licensed mental-health professional. If someone may be in immediate danger or crisis, they should contact local emergency services or a crisis hotline.
 
-**Live Space**: [build-small-hackathon/innerspace](https://huggingface.co/spaces/build-small-hackathon/innerspace)
-**Source Code**: [awilliams88/innerspace](https://github.com/awilliams88/innerspace)
-**Fine-tuned Model**: [build-small-hackathon/inner-space-1b-sft-cbt](https://huggingface.co/build-small-hackathon/inner-space-1b-sft-cbt)
+---
+
+## Links
+
+- **Demo**: [Video](InnerSpaceDemo.mp4)
+- **Social Post**: [LinkedIn](https://www.linkedin.com/posts/awilliams1988_buildsmall-huggingface-ai-ugcPost-7469692012166893568-T16Y)
+- **Source Code**: [awilliams88/innerspace](https://github.com/awilliams88/innerspace)
+- **Hugging Space**: [build-small-hackathon/innerspace](https://huggingface.co/spaces/build-small-hackathon/innerspace)
+- **Fine-tuned Model**: [build-small-hackathon/inner-space-1b-sft-cbt](https://huggingface.co/build-small-hackathon/inner-space-1b-sft-cbt)
 
 ---
 
@@ -164,11 +170,3 @@ This launches through `app.py` so Gradio receives the custom theme and CSS.
 - **Sponsor**: [OpenBMB](https://github.com/OpenBMB) — MiniCPM model family
 
 ---
-
-## Submission Status
-
-- Demo video: pending
-- Social post: pending
-- Primary track: Backyard AI
-- Sponsor alignment: OpenBMB, OpenAI/Codex-authored development
-- Target merit badges: Well-Tuned, Off-Brand, Tiny Titan

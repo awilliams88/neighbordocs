@@ -11,7 +11,7 @@ short_description: Local-first cognitive journal & reflection coach
 pinned: false
 ---
 
-# InnerSpace
+# Inner 🧠 Space
 
 **InnerSpace** is a private, local-first cognitive journal and AI reflection companion. It runs a fine-tuned 1.2B parameter language model inside the Hugging Face Space runtime. There is no serverless inference fallback, so journal text is not sent to an external inference API.
 
@@ -19,17 +19,13 @@ The model analyzes journal entries through the lens of **Cognitive Behavioral Th
 
 InnerSpace is a reflective journaling tool, not medical advice, diagnosis, crisis counseling, or a replacement for a licensed mental-health professional. If someone may be in immediate danger or crisis, they should contact local emergency services or a crisis hotline.
 
----
-
-## Links
+### Links
 
 - **Demo**: [Video](InnerSpaceDemo.mp4)
 - **Social Post**: [LinkedIn](https://www.linkedin.com/posts/awilliams1988_buildsmall-huggingface-ai-ugcPost-7469692012166893568-T16Y)
 - **Source Code**: [awilliams88/innerspace](https://github.com/awilliams88/innerspace)
 - **Hugging Space**: [build-small-hackathon/innerspace](https://huggingface.co/spaces/build-small-hackathon/innerspace)
 - **Fine-tuned Model**: [build-small-hackathon/inner-space-1b-sft-cbt](https://huggingface.co/build-small-hackathon/inner-space-1b-sft-cbt)
-
----
 
 ## What It Does
 

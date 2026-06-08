@@ -9,6 +9,17 @@ app_file: app.py
 python_version: "3.12"
 short_description: Local-first cognitive journal & reflection coach
 pinned: false
+tags:
+- build-small-hackathon
+- backyard-ai
+- openbmb
+- openai
+- well-tuned
+- off-brand
+- tiny-titan
+- mental-health
+- journaling
+- modal
 ---
 
 # Inner 🧠 Space
